@@ -1,0 +1,101 @@
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { mockAuth } from '@/lib/mockData';
+import { BookOpen, LogOut, PenTool, Settings, User, Users } from 'lucide-react';
+
+export const Header = () => {
+  const location = useLocation();
+  const user = mockAuth.getCurrentUser();
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    mockAuth.logout();
+    window.location.href = '/';
+  };
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        <div className="flex items-center space-x-8">
+          <Link to="/" className="flex items-center space-x-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <span className="font-bold text-xl">DevNotes</span>
+          </Link>
+          
+          <nav className="flex items-center space-x-6">
+            <Link 
+              to="/" 
+              className={`nav-link ${isActive('/') ? 'nav-link-active' : ''}`}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/categories" 
+              className={`nav-link ${isActive('/categories') ? 'nav-link-active' : ''}`}
+            >
+              Categories
+            </Link>
+            <Link 
+              to="/tags" 
+              className={`nav-link ${isActive('/tags') ? 'nav-link-active' : ''}`}
+            >
+              Tags
+            </Link>
+            
+            {user && (
+              <Link 
+                to="/my-articles" 
+                className={`nav-link ${isActive('/my-articles') ? 'nav-link-active' : ''}`}
+              >
+                My Articles
+              </Link>
+            )}
+            
+            {user?.role === 'ADMIN' && (
+              <Link 
+                to="/admin" 
+                className={`nav-link ${isActive('/admin') ? 'nav-link-active' : ''}`}
+              >
+                Admin
+              </Link>
+            )}
+          </nav>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          {user ? (
+            <>
+              <Link to="/create">
+                <Button variant="outline" size="sm" className="space-x-2">
+                  <PenTool className="h-4 w-4" />
+                  <span>Write</span>
+                </Button>
+              </Link>
+              
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{user.name}</span>
+                </div>
+                
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Login</Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm">Register</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
