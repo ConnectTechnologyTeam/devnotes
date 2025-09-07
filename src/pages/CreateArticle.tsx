@@ -226,7 +226,7 @@ const CreateArticle = () => {
                     </div>
                     
                     <div className="prose prose-lg max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url)=>url}>
                         {content || 'Article content will appear here...'}
                       </ReactMarkdown>
                     </div>

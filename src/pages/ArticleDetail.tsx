@@ -101,6 +101,8 @@ const ArticleDetail = () => {
         <div className="prose prose-lg max-w-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            // Allow data URIs for images inserted as base64
+            urlTransform={(url) => url}
             components={{
               h1: ({ children }) => <h1 className="text-3xl font-bold mb-6 text-foreground">{children}</h1>,
               h2: ({ children }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-foreground">{children}</h2>,
