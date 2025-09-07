@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { mockArticleService } from '@/lib/mockData';
 import { getPostBySlug, getAllUsers } from '@/lib/contentUtils';
 import { ArrowLeft, Calendar, Tag, User } from 'lucide-react';
+import { UserBadge } from '@/components/UserBadge';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/hooks/useAuth';
@@ -161,17 +162,7 @@ const ArticleDetail = () => {
         <div className="mt-12 pt-8 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-                {article.author.avatarUrl ? (
-                  <img src={article.author.avatarUrl} alt={article.author.name} className="w-12 h-12 object-cover" />
-                ) : (
-                  <User className="h-6 w-6 text-primary" />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">{article.author.name}</p>
-                <p className="text-sm text-muted-foreground">Author</p>
-              </div>
+              <UserBadge name={article.author.name} avatarUrl={article.author.avatarUrl} />
             </div>
             
             <div className="flex items-center space-x-2">

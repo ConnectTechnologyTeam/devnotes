@@ -95,13 +95,7 @@ const Login = () => {
               </p>
             </div>
             
-            <div className="mt-4 p-3 bg-muted rounded-lg text-sm">
-              <p className="font-medium mb-2">Demo Accounts:</p>
-              <div className="space-y-1 text-muted-foreground">
-                <p>Admin: admin@devnotes.com / password</p>
-                <p>User: john@example.com / password</p>
-              </div>
-            </div>
+            {/* demo accounts removed */}
           </CardContent>
         </Card>
       </div>

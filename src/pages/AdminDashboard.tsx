@@ -14,6 +14,7 @@ const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
+  const [refresh, setRefresh] = useState(0);
 
   if (authLoading) {
     return (
@@ -43,19 +44,36 @@ const AdminDashboard = () => {
   const publishedArticles = mockArticleService.getPublishedArticles();
   const totalArticles = mockArticleService.getAllArticles().length;
 
-  const handleApprove = (articleId: string) => {
-    toast({
-      title: "Article approved",
-      description: "The article has been published successfully.",
-    });
+  const handleApprove = async (articleId: string) => {
+    try {
+      await mockArticleService.updateArticle(articleId, {
+        status: 'PUBLISHED',
+        publishedAt: new Date().toISOString().split('T')[0],
+      } as any);
+      setRefresh((c) => c + 1);
+      toast({
+        title: 'Article approved',
+        description: 'The article has been published successfully.',
+      });
+    } catch (e) {
+      toast({ title: 'Failed to approve', variant: 'destructive' });
+    }
   };
 
-  const handleReject = (articleId: string) => {
-    toast({
-      title: "Article rejected",
-      description: "The article has been rejected and feedback sent to the author.",
-      variant: "destructive",
-    });
+  const handleReject = async (articleId: string) => {
+    try {
+      await mockArticleService.updateArticle(articleId, {
+        status: 'REJECTED',
+      } as any);
+      setRefresh((c) => c + 1);
+      toast({
+        title: 'Article rejected',
+        description: 'The article has been rejected.',
+        variant: 'destructive',
+      });
+    } catch (e) {
+      toast({ title: 'Failed to reject', variant: 'destructive' });
+    }
   };
 
   return (
@@ -232,8 +250,8 @@ const AdminDashboard = () => {
                             <span>Reject</span>
                           </Button>
                           
-                          <Button variant="outline">
-                            View Full Article
+                          <Button variant="outline" asChild>
+                            <a href={`#/articles/${article.id}`}>View Full Article</a>
                           </Button>
                         </div>
                       </CardContent>

@@ -6,6 +6,7 @@ backend:
   site_url: https://YOUR_USERNAME.github.io/YOUR_REPO_NAME # Replace with your GitHub Pages URL
 
 # Media storage
+# Media storage
 media_folder: "public/uploads"
 public_folder: "/uploads"
 

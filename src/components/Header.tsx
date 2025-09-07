@@ -3,12 +3,39 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { BookOpen, LogOut, PenTool, Settings, User, Users, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import { UserBadge } from '@/components/UserBadge';
+import { listMarkdown, loadMarkdown } from '@/lib/gitContent';
 
 export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
+  const [profile, setProfile] = useState<{ name: string; avatar?: string } | null>(null);
+
+  // Map GitHub login to CMS user profile when available
+  useEffect(() => {
+    (async () => {
+      if (!user?.name) return setProfile(null);
+      try {
+        const users = await listMarkdown('content/users');
+        for (const u of users) {
+          const { frontmatter } = await loadMarkdown(u.download_url);
+          const gh = (frontmatter.github || '').toString().toLowerCase();
+          if (gh && (user.name.toLowerCase() === gh || user.email?.toLowerCase() === gh)) {
+            setProfile({ name: frontmatter.name || gh, avatar: frontmatter.avatar });
+            return;
+          }
+        }
+        // Fallback to GitHub data if provided by OAuth consumer
+        const ghAvatar = (user as any).avatarUrl || (user as any).avatar_url;
+        setProfile({ name: user.name, avatar: ghAvatar });
+      } catch {
+        const ghAvatar = (user as any).avatarUrl || (user as any).avatar_url;
+        setProfile(user ? { name: user.name, avatar: ghAvatar } : null);
+      }
+    })();
+  }, [user?.name]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -84,10 +111,14 @@ export const Header = () => {
               </Link>
               
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{user.name}</span>
-                </div>
+                {profile ? (
+                  <UserBadge name={profile.name} avatarUrl={profile.avatar} />
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </div>
+                )}
                 
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4" />
