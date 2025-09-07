@@ -3,7 +3,6 @@ import { ArticleList } from '@/components/ArticleList';
 import { Article, mockArticleService } from '@/lib/mockData';
 import { useEffect, useState } from 'react';
 import { loadContentIndex } from '@/lib/publicContent';
-import { getAllUsers } from '@/lib/contentUtils';
 
 const Articles = () => {
   const [publishedArticles, setPublishedArticles] = useState<Article[]>(mockArticleService.getPublishedArticles());
@@ -12,17 +11,16 @@ const Articles = () => {
       try {
         const publicPosts = await loadContentIndex();
         if (!publicPosts || publicPosts.length === 0) return;
-        const users = await getAllUsers();
+        // Skip user loading to avoid 404 errors - use default author info
         const mapped: Article[] = publicPosts.map((p, idx) => {
-          const author = users.find(u => u.slug === p.author);
           return {
             id: p.slug,
             title: p.title || '',
             summary: p.description || '',
             content: p.body || '',
-            status: 'PUBLISHED',
-            authorId: author?.slug || 'cms',
-            author: { id: author?.slug || 'cms', email: '', name: author?.name || author?.github || 'Author', role: 'USER', avatarUrl: author?.avatar },
+            status: 'PUBLISHED' as const,
+            authorId: 'author',
+            author: { id: 'author', email: '', name: 'Author', role: 'USER' as const, avatarUrl: undefined },
             categoryId: 'cms',
             category: { id: 'cms', name: (p.category as any) || 'General', slug: String(p.category || 'general').toLowerCase() },
             tags: (p.tags || []).map((t: any, i: number) => ({ id: String(i), name: String(t), slug: String(t).toLowerCase() })),

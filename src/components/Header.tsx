@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { BookOpen, LogOut, PenTool, Settings, User, Users, Moon, Sun, Menu, Search } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { UserBadge } from '@/components/UserBadge';
-import { listMarkdown, loadMarkdown } from '@/lib/gitContent';
 import { MobileDrawer } from '@/components/MobileDrawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -22,15 +21,7 @@ export const Header = () => {
     (async () => {
       if (!user?.name) return setProfile(null);
       try {
-        const users = await listMarkdown('content/users');
-        for (const u of users) {
-          const { frontmatter } = await loadMarkdown(u.download_url);
-          const gh = (frontmatter.github || '').toString().toLowerCase();
-          if (gh && (user.name.toLowerCase() === gh || user.email?.toLowerCase() === gh)) {
-            setProfile({ name: frontmatter.name || gh, avatar: frontmatter.avatar });
-            return;
-          }
-        }
+        // Skip user loading to avoid 404 errors - use OAuth data directly
         // Fallback to GitHub data if provided by OAuth consumer
         const ghAvatar = (user as any).avatarUrl || (user as any).avatar_url;
         setProfile({ name: user.name, avatar: ghAvatar });
