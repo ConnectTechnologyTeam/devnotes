@@ -4,12 +4,25 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockArticleService, mockAuth } from '@/lib/mockData';
+import { mockArticleService } from '@/lib/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { PenTool, Plus } from 'lucide-react';
 
 const MyArticles = () => {
-  const user = mockAuth.getCurrentUser();
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

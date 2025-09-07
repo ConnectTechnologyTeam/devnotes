@@ -5,14 +5,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { mockArticleService, mockAuth, mockCategories, mockTags } from '@/lib/mockData';
+import { mockArticleService, mockCategories, mockTags } from '@/lib/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, Users, FileText, Tag, Folder } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const user = mockAuth.getCurrentUser();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || user.role !== 'ADMIN') {
     return (

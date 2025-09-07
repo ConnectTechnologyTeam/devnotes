@@ -1,16 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { mockAuth } from '@/lib/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { BookOpen, LogOut, PenTool, Settings, User, Users } from 'lucide-react';
 
 export const Header = () => {
   const location = useLocation();
-  const user = mockAuth.getCurrentUser();
+  const { user, logout } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    mockAuth.logout();
+    logout();
     window.location.href = '/';
   };
 

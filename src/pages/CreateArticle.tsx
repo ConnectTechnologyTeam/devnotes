@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockCategories, mockTags, mockAuth, mockArticleService } from '@/lib/mockData';
+import { mockCategories, mockTags, mockArticleService } from '@/lib/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Send, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -26,7 +27,19 @@ const CreateArticle = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const user = mockAuth.getCurrentUser();
+  const { user, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

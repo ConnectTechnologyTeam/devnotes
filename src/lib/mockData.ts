@@ -213,14 +213,32 @@ For production applications, use multi-stage builds to reduce image size.`,
   },
 ];
 
-// Mock authentication state
+// Mock authentication state with localStorage persistence
 export let currentUser: User | null = null;
+
+// Initialize currentUser from localStorage on module load
+const initializeUser = () => {
+  try {
+    const storedUser = localStorage.getItem('devnotes_user');
+    if (storedUser) {
+      currentUser = JSON.parse(storedUser);
+    }
+  } catch (error) {
+    console.error('Error loading user from localStorage:', error);
+    localStorage.removeItem('devnotes_user');
+  }
+};
+
+// Initialize user on module load
+initializeUser();
 
 export const mockAuth = {
   login: async (email: string, password: string): Promise<User> => {
     const user = mockUsers.find(u => u.email === email);
     if (user && password === 'password') {
       currentUser = user;
+      // Save to localStorage
+      localStorage.setItem('devnotes_user', JSON.stringify(user));
       return user;
     }
     throw new Error('Invalid credentials');
@@ -235,14 +253,27 @@ export const mockAuth = {
     };
     mockUsers.push(newUser);
     currentUser = newUser;
+    // Save to localStorage
+    localStorage.setItem('devnotes_user', JSON.stringify(newUser));
     return newUser;
   },
   
   logout: () => {
     currentUser = null;
+    // Remove from localStorage
+    localStorage.removeItem('devnotes_user');
   },
   
   getCurrentUser: () => currentUser,
+  
+  // Check if user is logged in
+  isLoggedIn: () => currentUser !== null,
+  
+  // Refresh user data from localStorage (useful after page reload)
+  refreshUser: () => {
+    initializeUser();
+    return currentUser;
+  },
 };
 
 // Mock article management
