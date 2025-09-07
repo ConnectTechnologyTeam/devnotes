@@ -1,8 +1,9 @@
 import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
-import { mockArticleService } from '@/lib/mockData';
-import { getAllPosts, Post, getAllUsers, UserDoc } from '@/lib/contentUtils';
+import { mockArticleService, Article } from '@/lib/mockData';
+import { getAllPosts, getAllUsers } from '@/lib/contentUtils';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import heroImage from '@/assets/hero-devnotes.jpg';
@@ -10,9 +11,38 @@ import { ArrowRight, BookOpen, Code, Lightbulb } from 'lucide-react';
 
 const Home = () => {
   const { user } = useAuth();
-  const publishedArticles = mockArticleService.getPublishedArticles();
-  // Optionally load CMS posts; keep UI unchanged if none available
-  // This keeps mock data as baseline.
+  const [articles, setArticles] = useState<Article[]>(mockArticleService.getPublishedArticles());
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const posts = await getAllPosts();
+        if (!posts || posts.length === 0) return; // keep mock
+        const users = await getAllUsers();
+        const mapped: Article[] = posts.map((p, i) => {
+          const author = users.find(u => u.slug === (p.author as any));
+          return {
+            id: p.slug,
+            title: p.title,
+            summary: p.description || '',
+            content: p.body || '',
+            status: 'PUBLISHED',
+            authorId: author?.slug || 'cms',
+            author: { id: author?.slug || 'cms', email: '', name: author?.name || author?.github || 'Author', role: 'USER', avatarUrl: author?.avatar },
+            categoryId: 'cms',
+            category: { id: 'cms', name: (p.category as any) || 'General', slug: String(p.category || 'general').toLowerCase() },
+            tags: (p.tags || []).map((t: any, idx: number) => ({ id: String(idx), name: String(t), slug: String(t).toLowerCase() })),
+            publishedAt: p.date,
+            createdAt: p.date,
+            updatedAt: p.date,
+          };
+        });
+        setArticles(mapped);
+      } catch {
+        // ignore; fall back to mock
+      }
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,11 +133,11 @@ const Home = () => {
           </div>
           
           <ArticleList 
-            articles={publishedArticles} 
+            articles={articles} 
             emptyMessage="No articles published yet."
           />
           
-          {publishedArticles.length > 0 && (
+          {articles.length > 0 && (
             <div className="text-center mt-12">
               <Link to="/articles">
                 <Button variant="outline" size="lg">
