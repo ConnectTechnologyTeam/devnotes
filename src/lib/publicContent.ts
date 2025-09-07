@@ -13,15 +13,15 @@ async function tryFetch(paths: string[]): Promise<Response> {
 }
 
 export async function loadContentIndex() {
-  // Support both BrowserRouter and HashRouter on GitHub Pages project URLs.
-  // When using HashRouter, pathname is typically '/<repo>/' and the app lives at that base.
-  const repoBase = (typeof window !== 'undefined') ? (window.location.pathname.replace(/\/index\.html$/, '').split('/').filter(Boolean)[0] || '') : '';
+  // For GitHub Pages project sites, the base is /<repo>/
+  // Your site: https://connecttechnologyteam.github.io/devnotes/#/
+  const repoBase = 'devnotes';
   const candidatePaths = [
+    `/${repoBase}/content-index.json`,
     `${BASE}content-index.json`,
     './content-index.json',
     '/content-index.json',
-    repoBase ? `/${repoBase}/content-index.json` : undefined,
-  ].filter(Boolean) as string[];
+  ];
   const res = await tryFetch(candidatePaths);
   const data = await res.json();
   return data.posts as Array<{ slug: string; title?: string; date?: string; description?: string; tags?: string[]; category?: string; author?: string; body: string; draft?: boolean }>;
