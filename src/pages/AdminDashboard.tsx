@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { mockArticles, mockAuth, mockCategories, mockTags } from '@/lib/mockData';
+import { mockArticleService, mockAuth, mockCategories, mockTags } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, Users, FileText, Tag, Folder } from 'lucide-react';
 
@@ -26,9 +26,9 @@ const AdminDashboard = () => {
     );
   }
 
-  const pendingArticles = mockArticles.filter(article => article.status === 'PENDING');
-  const publishedArticles = mockArticles.filter(article => article.status === 'PUBLISHED');
-  const totalArticles = mockArticles.length;
+  const pendingArticles = mockArticleService.getPendingArticles();
+  const publishedArticles = mockArticleService.getPublishedArticles();
+  const totalArticles = mockArticleService.getAllArticles().length;
 
   const handleApprove = (articleId: string) => {
     toast({
@@ -134,7 +134,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockArticles.slice(0, 5).map((article) => (
+                    {mockArticleService.getAllArticles().slice(0, 5).map((article) => (
                       <div key={article.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                         <div className="flex items-center space-x-3">
                           <Badge variant="outline" className={`status-badge status-${article.status.toLowerCase()}`}>

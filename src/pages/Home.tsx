@@ -1,13 +1,13 @@
 import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
-import { mockArticles } from '@/lib/mockData';
+import { mockArticleService } from '@/lib/mockData';
 import { Link } from 'react-router-dom';
 import heroImage from '@/assets/hero-devnotes.jpg';
 import { ArrowRight, BookOpen, Code, Lightbulb } from 'lucide-react';
 
 const Home = () => {
-  const publishedArticles = mockArticles.filter(article => article.status === 'PUBLISHED');
+  const publishedArticles = mockArticleService.getPublishedArticles();
 
   return (
     <div className="min-h-screen bg-background">

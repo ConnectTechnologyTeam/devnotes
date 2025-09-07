@@ -244,3 +244,88 @@ export const mockAuth = {
   
   getCurrentUser: () => currentUser,
 };
+
+// Mock article management
+export const mockArticleService = {
+  createArticle: async (articleData: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'author'>): Promise<Article> => {
+    const user = mockAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be logged in to create articles');
+    }
+
+    const newArticle: Article = {
+      id: Date.now().toString(),
+      ...articleData,
+      author: user,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    mockArticles.push(newArticle);
+    return newArticle;
+  },
+
+  updateArticle: async (id: string, updates: Partial<Article>): Promise<Article> => {
+    const index = mockArticles.findIndex(article => article.id === id);
+    if (index === -1) {
+      throw new Error('Article not found');
+    }
+
+    const user = mockAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be logged in to update articles');
+    }
+
+    // Check if user owns the article or is admin
+    if (mockArticles[index].authorId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('You can only update your own articles');
+    }
+
+    mockArticles[index] = {
+      ...mockArticles[index],
+      ...updates,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    return mockArticles[index];
+  },
+
+  deleteArticle: async (id: string): Promise<void> => {
+    const index = mockArticles.findIndex(article => article.id === id);
+    if (index === -1) {
+      throw new Error('Article not found');
+    }
+
+    const user = mockAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be logged in to delete articles');
+    }
+
+    // Check if user owns the article or is admin
+    if (mockArticles[index].authorId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('You can only delete your own articles');
+    }
+
+    mockArticles.splice(index, 1);
+  },
+
+  getArticleById: (id: string): Article | undefined => {
+    return mockArticles.find(article => article.id === id);
+  },
+
+  getArticlesByAuthor: (authorId: string): Article[] => {
+    return mockArticles.filter(article => article.authorId === authorId);
+  },
+
+  getPublishedArticles: (): Article[] => {
+    return mockArticles.filter(article => article.status === 'PUBLISHED');
+  },
+
+  getPendingArticles: (): Article[] => {
+    return mockArticles.filter(article => article.status === 'PENDING');
+  },
+
+  getAllArticles: (): Article[] => {
+    return mockArticles;
+  },
+};

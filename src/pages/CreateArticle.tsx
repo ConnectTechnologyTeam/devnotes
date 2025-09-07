@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockCategories, mockTags, mockAuth } from '@/lib/mockData';
+import { mockCategories, mockTags, mockAuth, mockArticleService } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Send, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -60,15 +60,35 @@ const CreateArticle = () => {
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
+      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
+      
+      await mockArticleService.createArticle({
+        title: title.trim(),
+        summary: summary.trim() || 'No summary provided',
+        content: content.trim() || 'No content provided',
+        status: 'DRAFT',
+        authorId: user!.id,
+        categoryId: categoryId || mockCategories[0].id,
+        category: selectedCategory || mockCategories[0],
+        tags: selectedTagsData,
+      });
+
       toast({
         title: "Draft saved",
         description: "Your article has been saved as a draft.",
       });
-      setLoading(false);
       navigate('/my-articles');
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitForReview = async () => {
@@ -83,15 +103,41 @@ const CreateArticle = () => {
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Article submitted",
-        description: "Your article has been submitted for review.",
+    try {
+      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
+      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
+      
+      // If user is admin, publish directly, otherwise submit for review
+      const status = user!.role === 'ADMIN' ? 'PUBLISHED' : 'PENDING';
+      
+      await mockArticleService.createArticle({
+        title: title.trim(),
+        summary: summary.trim(),
+        content: content.trim(),
+        status,
+        authorId: user!.id,
+        categoryId: categoryId,
+        category: selectedCategory!,
+        tags: selectedTagsData,
+        publishedAt: status === 'PUBLISHED' ? new Date().toISOString().split('T')[0] : undefined,
       });
-      setLoading(false);
+
+      toast({
+        title: status === 'PUBLISHED' ? "Article published" : "Article submitted",
+        description: status === 'PUBLISHED' 
+          ? "Your article has been published successfully." 
+          : "Your article has been submitted for review.",
+      });
       navigate('/my-articles');
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit article. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

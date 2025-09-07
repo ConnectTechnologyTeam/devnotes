@@ -4,7 +4,7 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockArticles, mockAuth } from '@/lib/mockData';
+import { mockArticleService, mockAuth } from '@/lib/mockData';
 import { PenTool, Plus } from 'lucide-react';
 
 const MyArticles = () => {
@@ -26,7 +26,7 @@ const MyArticles = () => {
     );
   }
 
-  const myArticles = mockArticles.filter(article => article.authorId === user.id);
+  const myArticles = mockArticleService.getArticlesByAuthor(user.id);
   
   const articlesByStatus = {
     all: myArticles,
