@@ -205,6 +205,45 @@
   .prose li {
     @apply mb-2;
   }
+
+  .prose img {
+    @apply rounded-lg max-w-full h-auto;
+  }
+
+  .prose table {
+    @apply overflow-x-auto block sm:table;
+  }
+
+  /* Mobile-responsive prose adjustments */
+  @media (max-width: 640px) {
+    .prose {
+      @apply text-sm;
+    }
+    
+    .prose h1 {
+      @apply text-xl mb-4;
+    }
+    
+    .prose h2 {
+      @apply text-lg mb-3 mt-6;
+    }
+    
+    .prose h3 {
+      @apply text-base mb-2 mt-4;
+    }
+
+    .prose p {
+      @apply mb-3;
+    }
+
+    .prose pre {
+      @apply p-3 text-sm;
+    }
+
+    .prose ul, .prose ol {
+      @apply mb-3 ml-4;
+    }
+  }
 }
 
 @layer components {
@@ -239,5 +278,25 @@
 
   .nav-link-active {
     @apply text-primary font-semibold;
+  }
+
+  /* Mobile utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }

@@ -27,30 +27,30 @@ const Tags = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Tags</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+      <div className="container mx-auto px-4 py-8 sm:py-12">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Tags</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             Explore articles by specific technologies, frameworks, and concepts. 
             Click on any tag to see related content.
           </p>
         </div>
 
         {/* Tag Cloud */}
-        <Card className="mb-12">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Hash className="h-5 w-5" />
+        <Card className="mb-8 sm:mb-12">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+              <Hash className="h-4 w-4 sm:h-5 sm:w-5" />
               <span>Popular Tags</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {tagsWithCounts.map((tag) => (
                 <Link key={tag.id} to={`/tags/${tag.slug}`}>
                   <Badge 
                     variant="secondary" 
-                    className={`hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer px-3 py-1.5 ${getTagSize(tag.articleCount)}`}
+                    className={`hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer px-3 py-2 min-h-[36px] ${getTagSize(tag.articleCount)}`}
                   >
                     {tag.name} ({tag.articleCount})
                   </Badge>
@@ -61,30 +61,30 @@ const Tags = () => {
         </Card>
 
         {/* Tags Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {tagsWithCounts.filter(tag => tag.articleCount > 0).map((tag) => (
             <Card key={tag.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Tag className="h-6 w-6 text-primary" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{tag.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex-1">
+                    <CardTitle className="text-base sm:text-lg">{tag.name}</CardTitle>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {tag.articleCount} {tag.articleCount === 1 ? 'article' : 'articles'}
                     </p>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center space-x-2 text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">#{tag.slug}</span>
+                    <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm truncate">#{tag.slug}</span>
                   </div>
                   <Link to={`/tags/${tag.slug}`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="min-h-[36px] text-xs sm:text-sm shrink-0">
                       View Articles
                     </Button>
                   </Link>
@@ -106,17 +106,18 @@ const Tags = () => {
               
               return (
                 <div key={tag.id}>
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
                     <div className="flex items-center space-x-3">
-                      <Tag className="h-6 w-6 text-primary" />
-                      <h2 className="text-2xl font-bold">{tag.name}</h2>
+                      <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                      <h2 className="text-xl sm:text-2xl font-bold">{tag.name}</h2>
                       <Badge variant="secondary" className="text-xs">
-                        {tag.articleCount} articles
+                        {tag.articleCount}
                       </Badge>
                     </div>
                     <Link to={`/tags/${tag.slug}`}>
-                      <Button variant="outline">
-                        View All #{tag.name} Articles
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto min-h-[44px]">
+                        <span className="sm:hidden">View All Articles</span>
+                        <span className="hidden sm:inline">View All #{tag.name} Articles</span>
                       </Button>
                     </Link>
                   </div>
