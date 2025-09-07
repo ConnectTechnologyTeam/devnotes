@@ -6,6 +6,9 @@ export interface User {
   avatarUrl?: string;
 }
 
+// Local-only type for storing credentials in localStorage for demo auth
+type StoredUser = User & { password: string };
+
 export interface Category {
   id: string;
   name: string;
@@ -235,28 +238,64 @@ initializeUser();
 
 export const mockAuth = {
   login: async (email: string, password: string): Promise<User> => {
-    const user = mockUsers.find(u => u.email === email);
-    if (user && password === 'password') {
-      currentUser = user;
-      // Save to localStorage
-      localStorage.setItem('devnotes_user', JSON.stringify(user));
-      return user;
+    // 1) Check registered users stored locally with passwords
+    try {
+      const raw = localStorage.getItem('devnotes_users');
+      if (raw) {
+        const storedUsers: StoredUser[] = JSON.parse(raw);
+        const found = storedUsers.find(u => u.email === email);
+        if (found && found.password === password) {
+          const user: User = { id: found.id, email: found.email, name: found.name, role: found.role, avatarUrl: found.avatarUrl };
+          currentUser = user;
+          localStorage.setItem('devnotes_user', JSON.stringify(user));
+          return user;
+        }
+      }
+    } catch {}
+
+    // 2) Fallback to built-in demo accounts (use password "password")
+    const demo = mockUsers.find(u => u.email === email);
+    if (demo && password === 'password') {
+      currentUser = demo;
+      localStorage.setItem('devnotes_user', JSON.stringify(demo));
+      return demo;
     }
+
     throw new Error('Invalid credentials');
   },
   
   register: async (email: string, password: string, name: string): Promise<User> => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      name,
-      role: 'USER'
-    };
-    mockUsers.push(newUser);
-    currentUser = newUser;
-    // Save to localStorage
-    localStorage.setItem('devnotes_user', JSON.stringify(newUser));
-    return newUser;
+    // Disallow duplicate emails
+    const existing = [...mockUsers].find(u => u.email === email);
+    try {
+      const raw = localStorage.getItem('devnotes_users');
+      const storedUsers: StoredUser[] = raw ? JSON.parse(raw) : [];
+      if (storedUsers.some(u => u.email === email)) {
+        throw new Error('Email already registered');
+      }
+
+      const newUser: StoredUser = {
+        id: Date.now().toString(),
+        email,
+        name,
+        role: 'USER',
+        password,
+      };
+      // Persist to local storage user registry
+      storedUsers.push(newUser);
+      localStorage.setItem('devnotes_users', JSON.stringify(storedUsers));
+
+      // Also add to in-memory list (without password) so article author info is consistent
+      const publicUser: User = { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role };
+      mockUsers.push(publicUser);
+      currentUser = publicUser;
+      localStorage.setItem('devnotes_user', JSON.stringify(publicUser));
+      return publicUser;
+    } catch (e: any) {
+      // Re-throw known error, else generic
+      if (e && e.message) throw e;
+      throw new Error('Registration failed');
+    }
   },
   
   logout: () => {
