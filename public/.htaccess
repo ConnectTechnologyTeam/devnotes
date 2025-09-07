@@ -1,0 +1,15 @@
+# Set correct MIME types for JavaScript modules
+<Files "*.js">
+    Header set Content-Type "application/javascript"
+</Files>
+
+<Files "*.mjs">
+    Header set Content-Type "application/javascript"
+</Files>
+
+# Enable CORS for module scripts
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</IfModule>

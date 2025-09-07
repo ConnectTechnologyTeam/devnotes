@@ -1,0 +1,18 @@
+# MIME type headers for GitHub Pages
+/*.js
+  Content-Type: application/javascript
+
+/*.mjs
+  Content-Type: application/javascript
+
+/*.ts
+  Content-Type: application/javascript
+
+/*.tsx
+  Content-Type: application/javascript
+
+# CORS headers for module scripts
+/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, OPTIONS
+  Access-Control-Allow-Headers: Content-Type
