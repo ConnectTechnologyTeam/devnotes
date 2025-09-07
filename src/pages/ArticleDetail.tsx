@@ -70,48 +70,55 @@ const ArticleDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <article className="container mx-auto px-4 py-12 max-w-4xl">
+      <article className="container mx-auto px-4 py-8 sm:py-12 max-w-4xl">
         {/* Article Header */}
-        <div className="mb-8">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+        <div className="mb-6 sm:mb-8">
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-4 sm:mb-6 transition-colors min-h-[44px]">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Articles
           </Link>
           
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
-                <User className="h-4 w-4" />
+                <User className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>{article.author.name}</span>
               </div>
               
-              <div className="flex items-center space-x-1">
-                <Tag className="h-4 w-4" />
-                <Link 
-                  to={`/categories/${article.category.slug}`}
-                  className="hover:text-primary transition-colors"
-                >
-                  {article.category.name}
-                </Link>
-              </div>
-              
-              {article.publishedAt && (
+              <div className="flex items-center justify-between sm:justify-start sm:space-x-4">
                 <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{new Date(article.publishedAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}</span>
+                  <Tag className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Link 
+                    to={`/categories/${article.category.slug}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {article.category.name}
+                  </Link>
                 </div>
-              )}
+                
+                {article.publishedAt && (
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">{new Date(article.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}</span>
+                    <span className="sm:hidden">{new Date(article.publishedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}</span>
+                  </div>
+                )}
+              </div>
             </div>
             
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
               {article.title}
             </h1>
             
-            <p className="text-xl text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
               {article.summary}
             </p>
             
@@ -120,7 +127,7 @@ const ArticleDetail = () => {
                 <Link 
                   key={tag.id} 
                   to={`/tags/${tag.slug}`}
-                  className="inline-flex items-center px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary-hover transition-colors"
+                  className="inline-flex items-center px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs sm:text-sm hover:bg-secondary-hover transition-colors min-h-[32px]"
                 >
                   {tag.name}
                 </Link>
@@ -130,7 +137,7 @@ const ArticleDetail = () => {
         </div>
         
         {/* Article Content */}
-        <div className="prose prose-lg mx-auto">
+        <div className="prose prose-sm sm:prose-lg max-w-none sm:mx-auto overflow-hidden">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             // Allow data URIs for images inserted as base64
@@ -141,18 +148,18 @@ const ArticleDetail = () => {
                   {children}
                 </a>
               ),
-              h1: ({ children }) => <h1 className="text-3xl font-bold mb-6 text-foreground">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-foreground">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-xl font-semibold mb-3 mt-6 text-foreground">{children}</h3>,
-              p: ({ children }) => <p className="mb-4 leading-relaxed text-foreground">{children}</p>,
+              h1: ({ children }) => <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-foreground">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 mt-6 sm:mt-8 text-foreground">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 mt-4 sm:mt-6 text-foreground">{children}</h3>,
+              p: ({ children }) => <p className="mb-3 sm:mb-4 leading-relaxed text-foreground text-sm sm:text-base">{children}</p>,
               code: ({ children, className }) => {
                 const isInline = !className;
                 if (isInline) {
-                  return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>;
+                  return <code className="bg-muted px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono">{children}</code>;
                 }
                 return <code className={className}>{children}</code>;
               },
-              pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">{children}</pre>,
+              pre: ({ children }) => <pre className="bg-muted p-3 sm:p-4 rounded-lg overflow-x-auto mb-3 sm:mb-4 text-sm">{children}</pre>,
               blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">{children}</blockquote>,
               ul: ({ children }) => <ul className="mb-4 ml-6 space-y-2">{children}</ul>,
               ol: ({ children }) => <ol className="mb-4 ml-6 space-y-2">{children}</ol>,
@@ -164,23 +171,23 @@ const ArticleDetail = () => {
         </div>
         
         {/* Article Footer */}
-        <div className="mt-12 pt-8 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+            <div className="flex items-center justify-center sm:justify-start">
               <UserBadge name={article.author.name} avatarUrl={article.author.avatarUrl} />
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
               {/* Action buttons: Edit (author) and Delete (admin) */}
               {user && article.authorId === user.id && (
-                <Link to={`/articles/${article.id}/edit`}>
-                  <Button className="mr-2">Edit</Button>
+                <Link to={`/articles/${article.id}/edit`} className="flex-1 sm:flex-initial">
+                  <Button className="w-full sm:w-auto min-h-[44px]">Edit</Button>
                 </Link>
               )}
               {user && user.role === 'ADMIN' && (
                 <Button
                   variant="destructive"
-                  className="mr-2"
+                  className="w-full sm:w-auto min-h-[44px]"
                   onClick={async () => {
                     try {
                       await mockArticleService.deleteArticle(article.id);
@@ -201,10 +208,11 @@ const ArticleDetail = () => {
                   Delete
                 </Button>
               )}
-              <Link to="/">
-                <Button variant="outline">
+              <Link to="/" className="flex-1 sm:flex-initial">
+                <Button variant="outline" className="w-full sm:w-auto min-h-[44px]">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  More Articles
+                  <span className="hidden sm:inline">More Articles</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
             </div>
