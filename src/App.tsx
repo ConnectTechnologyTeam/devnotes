@@ -16,6 +16,9 @@ import Categories from "./pages/Categories";
 import Tags from "./pages/Tags";
 import Posts from "./pages/Posts";
 import NotFound from "./pages/NotFound";
+import CategoryArticles from "./pages/CategoryArticles";
+import TagArticles from "./pages/TagArticles";
+import AdminUsers from "./pages/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -35,8 +38,11 @@ const App = () => (
           <Route path="/my-articles" element={<MyArticles />} />
           <Route path="/create" element={<CreateArticle />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/categories/:slug" element={<CategoryArticles />} />
           <Route path="/tags" element={<Tags />} />
+          <Route path="/tags/:slug" element={<TagArticles />} />
           <Route path="/posts" element={<Posts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

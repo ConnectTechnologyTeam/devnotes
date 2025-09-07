@@ -54,8 +54,14 @@ export const ArticleCard = ({ article, showStatus = false }: ArticleCardProps) =
 
       <CardContent className="flex-1">
         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-          <div className="flex items-center space-x-1">
-            <User className="h-4 w-4" />
+          <div className="flex items-center space-x-2">
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+              {article.author.avatarUrl ? (
+                <img src={article.author.avatarUrl} alt={article.author.name} className="w-5 h-5 object-cover" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
+            </div>
             <span>{article.author.name}</span>
           </div>
           

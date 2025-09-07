@@ -38,12 +38,58 @@ module.exports = async (req, res) => {
     // Get user info
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
-        'Authorization': `token ${tokenData.access_token}`,
+        'Authorization': `Bearer ${tokenData.access_token}`,
         'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'decap-oauth'
       },
     });
 
     const userData = await userResponse.json();
+
+    // Audit login to repo via Contents API
+    try {
+      const owner = process.env.REPO_OWNER;
+      const repo = process.env.REPO_NAME;
+      const path = 'data/user-logins.json';
+      const token = process.env.REPO_ACCESS_TOKEN;
+
+      let fileSha = null, json = {};
+      let fileRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'cms-audit' }
+      });
+      if (fileRes.status === 200) {
+        const file = await fileRes.json();
+        fileSha = file.sha;
+        json = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+      }
+
+      const login = userData.login;
+      const now = new Date().toISOString();
+      const cur = json[login] || { loginCount: 0 };
+      json[login] = {
+        name: userData.name || cur.name || login,
+        avatarUrl: userData.avatar_url || cur.avatarUrl || '',
+        loginCount: (cur.loginCount || 0) + 1,
+        lastLogin: now
+      };
+
+      const contentB64 = Buffer.from(JSON.stringify(json, null, 2)).toString('base64');
+      await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'cms-audit'
+        },
+        body: JSON.stringify({
+          message: `chore(cms): update login for ${login}`,
+          content: contentB64,
+          sha: fileSha
+        })
+      });
+    } catch (e) {
+      console.error('Failed to audit login:', e);
+    }
     
     // Create HTML page that posts message to parent window
     const html = `

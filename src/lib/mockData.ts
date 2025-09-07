@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   role: 'USER' | 'ADMIN';
+  avatarUrl?: string;
 }
 
 export interface Category {
@@ -55,9 +56,9 @@ export const mockTags: Tag[] = [
 ];
 
 export const mockUsers: User[] = [
-  { id: '1', email: 'admin@devnotes.com', name: 'Admin User', role: 'ADMIN' },
-  { id: '2', email: 'john@example.com', name: 'John Developer', role: 'USER' },
-  { id: '3', email: 'jane@example.com', name: 'Jane Smith', role: 'USER' },
+  { id: '1', email: 'admin@devnotes.com', name: 'Admin User', role: 'ADMIN', avatarUrl: '/uploads/admin-avatar.png' },
+  { id: '2', email: 'john@example.com', name: 'John Developer', role: 'USER', avatarUrl: '/uploads/john-avatar.png' },
+  { id: '3', email: 'jane@example.com', name: 'Jane Smith', role: 'USER', avatarUrl: '/uploads/jane-avatar.png' },
 ];
 
 export const mockArticles: Article[] = [

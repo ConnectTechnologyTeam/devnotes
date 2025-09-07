@@ -13,6 +13,7 @@ export interface Post {
   featured_image?: string;
   body: string;
   draft: boolean;
+  author?: string; // slug of user
 }
 
 export interface Page {
@@ -23,20 +24,23 @@ export interface Page {
   draft: boolean;
 }
 
+export interface UserDoc {
+  slug: string;
+  name: string;
+  email?: string;
+  avatar?: string;
+  bio?: string;
+}
+
 /**
  * Get the base URL for content files
  * In production, this should point to your GitHub Pages URL
  * In development, you can use a local server or GitHub raw URLs
  */
 const getContentBaseUrl = (): string => {
-  if (import.meta.env.DEV) {
-    // In development, you might want to serve content locally
-    // or use GitHub raw URLs for testing
-    return 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main';
-  }
-  
-  // In production, use your GitHub Pages URL
-  return 'https://YOUR_USERNAME.github.io/YOUR_REPO_NAME';
+  // We can just fetch relative to the site root because static assets
+  // are bundled to the same structure on GitHub Pages.
+  return '';
 };
 
 /**
@@ -107,20 +111,30 @@ export const parseFrontmatter = (content: string): { frontmatter: Record<string,
  */
 export const getAllPosts = async (): Promise<Post[]> => {
   try {
-    // In a real implementation, you might want to:
-    // 1. Use GitHub API to list files in content/posts
-    // 2. Cache the results
-    // 3. Handle pagination
-    
-    // For now, return a hardcoded list or implement based on your needs
+    // Simple heuristic: try to fetch a manifest if present; otherwise return []
+    // You can generate content/posts/manifest.json from CMS or CI if needed.
+    const baseUrl = getContentBaseUrl();
+    const resp = await fetch(`${baseUrl}/content/posts/manifest.json`);
+    if (!resp.ok) return [];
+    const items: { slug: string; path: string }[] = await resp.json();
     const posts: Post[] = [];
-    
-    // Example: You could maintain a posts index file
-    // or use GitHub API to discover posts dynamically
-    const indexResponse = await fetchMarkdownFile('content/posts/index.md');
-    // Parse the index file to get list of posts...
-    
-    return posts;
+    for (const item of items) {
+      const md = await fetchMarkdownFile(item.path);
+      const { frontmatter, body } = parseFrontmatter(md);
+      posts.push({
+        slug: item.slug,
+        title: frontmatter.title || '',
+        date: frontmatter.date || '',
+        description: frontmatter.description || '',
+        tags: frontmatter.tags || [],
+        category: frontmatter.category || '',
+        featured_image: frontmatter.featured_image,
+        body,
+        draft: !!frontmatter.draft,
+        author: frontmatter.author,
+      });
+    }
+    return posts.filter(p => !p.draft);
   } catch (error) {
     console.error('Error fetching posts:', error);
     return [];
@@ -132,8 +146,32 @@ export const getAllPosts = async (): Promise<Post[]> => {
  */
 export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   try {
-    // Construct the file path based on your naming convention
-    // This assumes posts are named like: YYYY-MM-DD-slug.md
+    // Prefer manifest lookup for portability
+    try {
+      const baseUrl = getContentBaseUrl();
+      const resp = await fetch(`${baseUrl}/content/posts/manifest.json`);
+      if (resp.ok) {
+        const items: { slug: string; path: string }[] = await resp.json();
+        const found = items.find(i => i.slug === slug);
+        if (found) {
+          const content = await fetchMarkdownFile(found.path);
+          const { frontmatter, body } = parseFrontmatter(content);
+          return {
+            slug,
+            title: frontmatter.title || '',
+            date: frontmatter.date || '',
+            description: frontmatter.description || '',
+            tags: frontmatter.tags || [],
+            category: frontmatter.category || '',
+            featured_image: frontmatter.featured_image,
+            body,
+            draft: !!frontmatter.draft,
+            author: frontmatter.author,
+          };
+        }
+      }
+    } catch {}
+
     const content = await fetchMarkdownFile(`content/posts/${slug}.md`);
     const { frontmatter, body } = parseFrontmatter(content);
     
@@ -147,10 +185,27 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
       featured_image: frontmatter.featured_image,
       body,
       draft: frontmatter.draft || false,
+      author: frontmatter.author,
     };
   } catch (error) {
     console.error(`Error fetching post ${slug}:`, error);
     return null;
+  }
+};
+
+/**
+ * Load users (authors) from CMS as JSON manifest for quick client-side mapping.
+ * Expected manifest format: [{ slug, name, email?, avatar?, bio? }]
+ */
+export const getAllUsers = async (): Promise<UserDoc[]> => {
+  try {
+    const baseUrl = getContentBaseUrl();
+    const resp = await fetch(`${baseUrl}/content/users/manifest.json`);
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch (e) {
+    console.error('Error fetching users:', e);
+    return [];
   }
 };
 

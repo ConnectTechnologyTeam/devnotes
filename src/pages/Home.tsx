@@ -2,6 +2,7 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { mockArticleService } from '@/lib/mockData';
+import { getAllPosts, Post, getAllUsers, UserDoc } from '@/lib/contentUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import heroImage from '@/assets/hero-devnotes.jpg';
@@ -10,6 +11,8 @@ import { ArrowRight, BookOpen, Code, Lightbulb } from 'lucide-react';
 const Home = () => {
   const { user } = useAuth();
   const publishedArticles = mockArticleService.getPublishedArticles();
+  // Optionally load CMS posts; keep UI unchanged if none available
+  // This keeps mock data as baseline.
 
   return (
     <div className="min-h-screen bg-background">

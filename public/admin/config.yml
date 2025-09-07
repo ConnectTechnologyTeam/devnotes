@@ -11,6 +11,18 @@ public_folder: "/uploads"
 
 # Collections
 collections:
+  # Users collection
+  - name: "users"
+    label: "Users"
+    folder: "content/users"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { name: github, label: "GitHub Login", widget: "string" }
+      - { name: name,   label: "Full Name",    widget: "string", required: false }
+      - { name: avatar, label: "Avatar",       widget: "image",  required: false }
+      - { name: bio,    label: "Bio",          widget: "text",   required: false }
+      - { name: role,   label: "Role",         widget: "select", options: ["author","editor","admin"], default: "author" }
   # Posts collection
   - name: "posts"
     label: "Posts"
@@ -18,14 +30,21 @@ collections:
     create: true
     slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
-      - {label: "Publish Date", name: "date", widget: "datetime"}
-      - {label: "Description", name: "description", widget: "text"}
-      - {label: "Tags", name: "tags", widget: "list", default: []}
-      - {label: "Category", name: "category", widget: "string"}
-      - {label: "Featured Image", name: "featured_image", widget: "image", required: false}
-      - {label: "Body", name: "body", widget: "markdown"}
-      - {label: "Draft", name: "draft", widget: "boolean", default: false}
+      - { name: title, label: Title }
+      - { name: date, label: Date, widget: datetime }
+      - label: Author (slug from users)
+        name: author
+        widget: relation
+        collection: "users"
+        value_field: "{{slug}}"
+        search_fields: ["name","github"]
+        display_fields: ["name","github"]
+      - { name: description, label: Summary, widget: text, required: false }
+      - { name: categories, label: Categories, widget: select, multiple: true, options: ["Java","Spring","Microservices","Architecture"] }
+      - { name: tags, label: Tags, widget: list, required: false }
+      - { name: featured_image, label: Featured Image, widget: image, required: false }
+      - { name: body, label: Body, widget: markdown }
+      - { name: draft, label: Draft, widget: boolean, default: false }
 
   # Pages collection
   - name: "pages"

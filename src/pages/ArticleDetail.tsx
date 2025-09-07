@@ -1,8 +1,10 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/Header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { mockArticleService } from '@/lib/mockData';
+import { getPostBySlug, getAllUsers } from '@/lib/contentUtils';
 import { ArrowLeft, Calendar, Tag, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,10 +13,39 @@ import { useToast } from '@/hooks/use-toast';
 
 const ArticleDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const article = mockArticleService.getArticleById(id!);
+  let initial = mockArticleService.getArticleById(id!);
+  const [cmsArticle, setCmsArticle] = useState<typeof initial | null>(initial);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initial) return; // already have mock article
+    (async () => {
+      const post = await getPostBySlug(id!);
+      if (!post) return setCmsArticle(null);
+      const users = await getAllUsers();
+      const author = users.find(u => u.slug === post.author);
+      const mapped = {
+        id: id!,
+        title: post.title,
+        summary: post.description,
+        content: post.body,
+        status: 'PUBLISHED' as const,
+        authorId: 'cms',
+        author: { id: 'cms', email: author?.email || '', name: author?.name || 'Author', role: 'USER' as const, avatarUrl: author?.avatar },
+        categoryId: 'cms',
+        category: { id: 'cms', name: post.category || 'General', slug: (post.category || 'general').toLowerCase() },
+        tags: (post.tags || []).map((t, i) => ({ id: String(i), name: t, slug: String(t).toLowerCase() })),
+        publishedAt: post.date,
+        createdAt: post.date,
+        updatedAt: post.date,
+      };
+      setCmsArticle(mapped as any);
+    })();
+  }, [id]);
+
+  const article = initial ?? cmsArticle ?? undefined;
 
   if (!article) {
     return (
@@ -130,8 +161,12 @@ const ArticleDetail = () => {
         <div className="mt-12 pt-8 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 text-primary" />
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+                {article.author.avatarUrl ? (
+                  <img src={article.author.avatarUrl} alt={article.author.name} className="w-12 h-12 object-cover" />
+                ) : (
+                  <User className="h-6 w-6 text-primary" />
+                )}
               </div>
               <div>
                 <p className="font-semibold">{article.author.name}</p>

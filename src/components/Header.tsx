@@ -1,12 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, LogOut, PenTool, Settings, User, Users } from 'lucide-react';
+import { BookOpen, LogOut, PenTool, Settings, User, Users, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 
 export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggle } = useTheme();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -65,6 +67,13 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" onClick={toggle} aria-label="Toggle theme">
+            {document.documentElement.classList.contains('dark') || theme === 'dark' ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
           {user ? (
             <>
               <Link to="/create">
