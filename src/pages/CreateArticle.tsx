@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, Send, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import MarkdownEditor from '@/components/MarkdownEditor';
 
 const CreateArticle = () => {
   const [title, setTitle] = useState('');
@@ -148,17 +149,13 @@ const CreateArticle = () => {
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Content * (Markdown supported)</Label>
-                      <Textarea
-                        id="content"
-                        placeholder="Write your article content here using Markdown..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        rows={20}
-                        className="font-mono"
-                      />
-                    </div>
+                    <MarkdownEditor
+                      value={content}
+                      onChange={setContent}
+                      placeholder="Write your article content here using Markdown..."
+                      label="Content * (Markdown supported)"
+                      rows={20}
+                    />
                   </>
                 ) : (
                   <div className="space-y-6">
