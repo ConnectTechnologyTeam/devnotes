@@ -2,11 +2,13 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { mockArticleService } from '@/lib/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import heroImage from '@/assets/hero-devnotes.jpg';
 import { ArrowRight, BookOpen, Code, Lightbulb } from 'lucide-react';
 
 const Home = () => {
+  const { user } = useAuth();
   const publishedArticles = mockArticleService.getPublishedArticles();
 
   return (
@@ -36,7 +38,7 @@ const Home = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/register">
+            <Link to={user ? "/create" : "/login"}>
               <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 py-3 text-lg">
                 Start Writing <ArrowRight className="ml-2 h-5 w-5" />
               </Button>

@@ -276,6 +276,35 @@ export const mockAuth = {
   },
 };
 
+// Initialize articles from localStorage
+const initializeArticles = () => {
+  try {
+    const storedArticles = localStorage.getItem('devnotes_articles');
+    if (storedArticles) {
+      const parsedArticles = JSON.parse(storedArticles);
+      // Merge with existing mock articles (keep original ones, add new ones)
+      const existingIds = new Set(mockArticles.map(a => a.id));
+      const newArticles = parsedArticles.filter((a: Article) => !existingIds.has(a.id));
+      mockArticles.push(...newArticles);
+    }
+  } catch (error) {
+    console.error('Error loading articles from localStorage:', error);
+    localStorage.removeItem('devnotes_articles');
+  }
+};
+
+// Initialize articles on module load
+initializeArticles();
+
+// Save articles to localStorage
+const saveArticlesToStorage = () => {
+  try {
+    localStorage.setItem('devnotes_articles', JSON.stringify(mockArticles));
+  } catch (error) {
+    console.error('Error saving articles to localStorage:', error);
+  }
+};
+
 // Mock article management
 export const mockArticleService = {
   createArticle: async (articleData: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'author'>): Promise<Article> => {
@@ -293,6 +322,7 @@ export const mockArticleService = {
     };
 
     mockArticles.push(newArticle);
+    saveArticlesToStorage();
     return newArticle;
   },
 
@@ -318,6 +348,7 @@ export const mockArticleService = {
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
+    saveArticlesToStorage();
     return mockArticles[index];
   },
 
@@ -338,6 +369,7 @@ export const mockArticleService = {
     }
 
     mockArticles.splice(index, 1);
+    saveArticlesToStorage();
   },
 
   getArticleById: (id: string): Article | undefined => {
@@ -357,6 +389,12 @@ export const mockArticleService = {
   },
 
   getAllArticles: (): Article[] => {
+    return mockArticles;
+  },
+
+  // Refresh articles from localStorage (useful after page reload)
+  refreshArticles: () => {
+    initializeArticles();
     return mockArticles;
   },
 };
