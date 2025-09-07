@@ -66,8 +66,8 @@ There are many ways to contribute to DevNotes Scribe:
 
 Have questions or suggestions? We'd love to hear from you!
 
-- **GitHub**: [github.com/your-username/devnotes-scribe](https://github.com/your-username/devnotes-scribe)
-- **Email**: contact@devnotes-scribe.com
+- **GitHub**: [github.com/your-username/devnotes](https://github.com/your-username/devnotes)
+- **Email**: contact@devnotes.com
 - **Twitter**: [@DevNotesScribe](https://twitter.com/DevNotesScribe)
 
 ---

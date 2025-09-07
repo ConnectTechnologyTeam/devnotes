@@ -128,7 +128,7 @@ const getContentBaseUrl = (): string => {
 ## 📁 File Structure
 
 ```
-devnotes-scribe/
+devnotes/
 ├── public/
 │   ├── admin/
 │   │   ├── index.html          # CMS interface

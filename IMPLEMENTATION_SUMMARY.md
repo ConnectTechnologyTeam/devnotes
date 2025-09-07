@@ -95,7 +95,7 @@ const getContentBaseUrl = (): string => {
 ## 📁 File Structure Added
 
 ```
-devnotes-scribe/
+devnotes/
 ├── public/
 │   ├── admin/
 │   │   ├── index.html          # ✅ NEW: CMS interface
@@ -103,7 +103,7 @@ devnotes-scribe/
 │   └── uploads/                # ✅ NEW: Media uploads
 ├── content/                    # ✅ NEW: Content directory
 │   ├── posts/                  # ✅ NEW: Blog posts
-│   │   ├── 2024-01-15-welcome-to-devnotes-scribe.md
+│   │   ├── 2024-01-15-welcome-to-devnotes.md
 │   │   └── 2024-01-20-react-best-practices.md
 │   └── pages/                  # ✅ NEW: Static pages
 │       └── about.md
