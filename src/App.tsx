@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import CategoryArticles from "./pages/CategoryArticles";
 import TagArticles from "./pages/TagArticles";
 import AdminUsers from "./pages/AdminUsers";
+import UserProfile from "./pages/UserProfile";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/create" element={<CreateArticle />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/profile" element={<UserProfile />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/categories/:slug" element={<CategoryArticles />} />
           <Route path="/tags" element={<Tags />} />

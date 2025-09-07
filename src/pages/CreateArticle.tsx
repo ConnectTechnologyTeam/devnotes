@@ -225,8 +225,18 @@ const CreateArticle = () => {
                       </p>
                     </div>
                     
-                    <div className="prose prose-lg max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url)=>url}>
+                    <div className="prose prose-lg mx-auto">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        urlTransform={(url)=>url}
+                        components={{
+                          a: ({ href, children }) => (
+                            <a href={href as string} className="text-primary hover:underline break-words" target="_blank" rel="noreferrer">
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
                         {content || 'Article content will appear here...'}
                       </ReactMarkdown>
                     </div>

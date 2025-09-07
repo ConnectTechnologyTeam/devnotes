@@ -130,12 +130,17 @@ const ArticleDetail = () => {
         </div>
         
         {/* Article Content */}
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg mx-auto">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             // Allow data URIs for images inserted as base64
             urlTransform={(url) => url}
             components={{
+              a: ({ href, children }) => (
+                <a href={href as string} className="text-primary hover:underline break-words" target="_blank" rel="noreferrer">
+                  {children}
+                </a>
+              ),
               h1: ({ children }) => <h1 className="text-3xl font-bold mb-6 text-foreground">{children}</h1>,
               h2: ({ children }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-foreground">{children}</h2>,
               h3: ({ children }) => <h3 className="text-xl font-semibold mb-3 mt-6 text-foreground">{children}</h3>,

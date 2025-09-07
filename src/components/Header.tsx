@@ -112,15 +112,16 @@ export const Header = () => {
               </Link>
               
               <div className="flex items-center space-x-3">
-                {profile ? (
-                  <UserBadge name={profile.name} avatarUrl={profile.avatar} />
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{user.name}</span>
-                  </div>
-                )}
-                
+                <Link to="/profile" className="hover:opacity-90 transition-opacity">
+                  {profile ? (
+                    <UserBadge name={profile.name} avatarUrl={profile.avatar} />
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{user.name}</span>
+                    </div>
+                  )}
+                </Link>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4" />
                 </Button>
