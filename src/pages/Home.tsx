@@ -29,7 +29,10 @@ const Home = () => {
           category: p.category || 'General',
           author: p.author,
         })) as any;
-        if (!posts || posts.length === 0) return; // keep mock
+        if (!posts || posts.length === 0) {
+          setArticles(mockArticleService.getPublishedArticles());
+          return;
+        }
         const users = await getAllUsers();
         const mapped: Article[] = posts.map((p, i) => {
           const author = users.find(u => u.slug === (p.author as any));
@@ -51,7 +54,7 @@ const Home = () => {
         });
         setArticles(mapped);
       } catch {
-        // ignore; fall back to mock
+        setArticles(mockArticleService.getPublishedArticles());
       }
     })();
   }, []);

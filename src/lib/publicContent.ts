@@ -13,7 +13,9 @@ async function tryFetch(paths: string[]): Promise<Response> {
 }
 
 export async function loadContentIndex() {
-  const repoBase = (typeof window !== 'undefined') ? (window.location.pathname.split('/').filter(Boolean)[0] || '') : '';
+  // Support both BrowserRouter and HashRouter on GitHub Pages project URLs.
+  // When using HashRouter, pathname is typically '/<repo>/' and the app lives at that base.
+  const repoBase = (typeof window !== 'undefined') ? (window.location.pathname.replace(/\/index\.html$/, '').split('/').filter(Boolean)[0] || '') : '';
   const candidatePaths = [
     `${BASE}content-index.json`,
     './content-index.json',
