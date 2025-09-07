@@ -30,6 +30,8 @@ export interface UserDoc {
   email?: string;
   avatar?: string;
   bio?: string;
+  github?: string;
+  role?: string;
 }
 
 /**
@@ -92,12 +94,19 @@ export const parseFrontmatter = (content: string): { frontmatter: Record<string,
       
       // Parse arrays (simple format: [item1, item2, item3])
       if (value.startsWith('[') && value.endsWith(']')) {
-        value = value.slice(1, -1).split(',').map(item => item.trim().replace(/['"]/g, ''));
+        frontmatter[key] = value.slice(1, -1).split(',').map(item => item.trim().replace(/['"]/g, ''));
+        return;
       }
       
       // Parse booleans
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
+      if (value === 'true') {
+        frontmatter[key] = true;
+        return;
+      }
+      if (value === 'false') {
+        frontmatter[key] = false;
+        return;
+      }
       
       frontmatter[key] = value;
     }

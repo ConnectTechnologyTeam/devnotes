@@ -6,6 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { getAllPosts, getAllUsers } from '@/lib/contentUtils';
 import { mockArticleService } from '@/lib/mockData';
+import ImageUpload from '@/components/ImageUpload';
+import { useToast } from '@/hooks/use-toast';
+import { Edit3 } from 'lucide-react';
 
 interface ProfileData {
   slug?: string;
@@ -21,6 +24,8 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -51,6 +56,17 @@ const UserProfile = () => {
     })();
   }, [user?.name]);
 
+  const handleAvatarUpload = (imageUrl: string) => {
+    if (profile) {
+      setProfile({ ...profile, avatar: imageUrl });
+      setIsEditingAvatar(false);
+      toast({
+        title: "Avatar updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -70,12 +86,22 @@ const UserProfile = () => {
           <>
             {/* Header */}
             <div className="flex items-start gap-6 mb-10">
-              <img
-                src={profile.avatar || ''}
-                alt={profile.name}
-                className="h-20 w-20 rounded-full object-cover bg-muted"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
+              <div className="relative group">
+                <img
+                  src={profile.avatar || ''}
+                  alt={profile.name}
+                  className="h-20 w-20 rounded-full object-cover bg-muted"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute -bottom-2 -right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setIsEditingAvatar(true)}
+                >
+                  <Edit3 className="h-3 w-3" />
+                </Button>
+              </div>
               <div>
                 <h1 className="text-3xl font-bold">{profile.name}</h1>
                 {profile.github && (
@@ -89,6 +115,28 @@ const UserProfile = () => {
                 )}
               </div>
             </div>
+
+            {/* Avatar Upload Modal */}
+            {isEditingAvatar && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                  <h3 className="text-lg font-semibold mb-4">Update Profile Picture</h3>
+                  <ImageUpload 
+                    onImageInsert={handleAvatarUpload}
+                    className="mb-4"
+                    size="lg"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsEditingAvatar(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Posts */}
             <h2 className="text-2xl font-semibold mb-4">Articles by {profile.name}</h2>
