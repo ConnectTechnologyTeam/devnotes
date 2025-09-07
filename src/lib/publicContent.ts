@@ -2,9 +2,25 @@ import matter from 'gray-matter';
 
 const BASE = (import.meta as any).env?.BASE_URL || '/';
 
+async function tryFetch(paths: string[]): Promise<Response> {
+  for (const p of paths) {
+    try {
+      const res = await fetch(p, { cache: 'no-store' });
+      if (res.ok) return res;
+    } catch {}
+  }
+  throw new Error('content-index.json not found');
+}
+
 export async function loadContentIndex() {
-  const res = await fetch(`${BASE}content-index.json`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('content-index.json not found');
+  const repoBase = (typeof window !== 'undefined') ? (window.location.pathname.split('/').filter(Boolean)[0] || '') : '';
+  const candidatePaths = [
+    `${BASE}content-index.json`,
+    './content-index.json',
+    '/content-index.json',
+    repoBase ? `/${repoBase}/content-index.json` : undefined,
+  ].filter(Boolean) as string[];
+  const res = await tryFetch(candidatePaths);
   const data = await res.json();
   return data.posts as Array<{ slug: string; title?: string; date?: string; description?: string; tags?: string[]; category?: string; author?: string; body: string; draft?: boolean }>;
 }
