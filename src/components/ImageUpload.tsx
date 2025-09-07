@@ -51,16 +51,20 @@ const ImageUpload = ({ onImageInsert, className = '', size = 'md' }: ImageUpload
       const preview = URL.createObjectURL(file);
       setPreviewUrl(preview);
 
-      // In a real application, you would upload to a server
-      // For now, we'll use a mock upload that returns a placeholder URL
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Convert file to base64 for storage
+      const base64Image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
       
-      // Generate a mock URL (in production, this would be the actual uploaded image URL)
-      const mockImageUrl = `https://via.placeholder.com/800x600/4F46E5/FFFFFF?text=${encodeURIComponent(file.name)}`;
+      // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Insert the image into the content
+      // Insert the image into the content using base64
       const altText = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
-      onImageInsert(mockImageUrl, altText);
+      onImageInsert(base64Image, altText);
       
       toast({
         title: "Image uploaded",

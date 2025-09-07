@@ -2,14 +2,14 @@ import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { mockArticles } from '@/lib/mockData';
+import { mockArticleService } from '@/lib/mockData';
 import { ArrowLeft, Calendar, Tag, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const ArticleDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const article = mockArticles.find(a => a.id === id);
+  const article = mockArticleService.getArticleById(id!);
 
   if (!article) {
     return (
