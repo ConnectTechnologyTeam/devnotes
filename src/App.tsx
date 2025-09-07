@@ -20,6 +20,7 @@ import CategoryArticles from "./pages/CategoryArticles";
 import TagArticles from "./pages/TagArticles";
 import AdminUsers from "./pages/AdminUsers";
 import UserProfile from "./pages/UserProfile";
+import AuthGuard from "./components/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -36,11 +37,13 @@ const App = () => (
           <Route path="/articles/:id" element={<ArticleDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/my-articles" element={<MyArticles />} />
-          <Route path="/create" element={<CreateArticle />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/profile" element={<UserProfile />} />
+          <Route element={<AuthGuard />}>
+            <Route path="/my-articles" element={<MyArticles />} />
+            <Route path="/create" element={<CreateArticle />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/profile" element={<UserProfile />} />
+          </Route>
           <Route path="/categories" element={<Categories />} />
           <Route path="/categories/:slug" element={<CategoryArticles />} />
           <Route path="/tags" element={<Tags />} />
