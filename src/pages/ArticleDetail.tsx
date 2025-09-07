@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,15 @@ import { mockArticleService } from '@/lib/mockData';
 import { ArrowLeft, Calendar, Tag, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const ArticleDetail = () => {
   const { id } = useParams<{ id: string }>();
   const article = mockArticleService.getArticleById(id!);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   if (!article) {
     return (
@@ -133,6 +138,36 @@ const ArticleDetail = () => {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* Action buttons: Edit (author) and Delete (admin) */}
+              {user && article.authorId === user.id && (
+                <Link to={`/articles/${article.id}/edit`}>
+                  <Button className="mr-2">Edit</Button>
+                </Link>
+              )}
+              {user && user.role === 'ADMIN' && (
+                <Button
+                  variant="destructive"
+                  className="mr-2"
+                  onClick={async () => {
+                    try {
+                      await mockArticleService.deleteArticle(article.id);
+                      toast({
+                        title: 'Article deleted',
+                        description: 'The article has been removed successfully.',
+                      });
+                      navigate('/');
+                    } catch (error) {
+                      toast({
+                        title: 'Delete failed',
+                        description: 'Could not delete the article. Please try again.',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
               <Link to="/">
                 <Button variant="outline">
                   <ArrowLeft className="mr-2 h-4 w-4" />
