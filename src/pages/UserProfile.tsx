@@ -57,14 +57,19 @@ const UserProfile = () => {
   }, [user?.name]);
 
   const handleAvatarUpload = (imageUrl: string) => {
-    if (profile) {
-      setProfile({ ...profile, avatar: imageUrl });
-      setIsEditingAvatar(false);
-      toast({
-        title: "Avatar updated",
-        description: "Your profile picture has been updated successfully.",
-      });
-    }
+    if (!profile) return;
+    setProfile({ ...profile, avatar: imageUrl });
+    // persist into currentUser for reuse
+    try {
+      const raw = localStorage.getItem('devnotes_user');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.avatarUrl = imageUrl;
+        localStorage.setItem('devnotes_user', JSON.stringify(parsed));
+      }
+    } catch {}
+    setIsEditingAvatar(false);
+    toast({ title: 'Avatar updated', description: 'Your profile picture has been updated successfully.' });
   };
 
   return (
