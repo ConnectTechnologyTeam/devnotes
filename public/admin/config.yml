@@ -38,3 +38,4 @@ collections:
       - {label: "Description", name: "description", widget: "text", required: false}
       - {label: "Body", name: "body", widget: "markdown"}
       - {label: "Draft", name: "draft", widget: "boolean", default: false}
+

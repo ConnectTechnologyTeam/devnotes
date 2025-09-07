@@ -153,3 +153,4 @@ devnotes-scribe/
 - [ ] New `/posts` route displays content
 
 Your Decap CMS integration is now complete! 🎉
+

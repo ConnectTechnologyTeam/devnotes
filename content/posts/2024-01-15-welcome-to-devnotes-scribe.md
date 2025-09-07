@@ -47,3 +47,4 @@ Head over to the [Create Article](/create) page and start sharing your first tec
 ---
 
 *Happy coding and sharing!* 🎉
+
