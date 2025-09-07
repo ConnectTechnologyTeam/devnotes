@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { mockArticleService } from '@/lib/mockData';
 import { getPostBySlug, getAllUsers } from '@/lib/contentUtils';
+import { getPostFromIndex } from '@/lib/publicContent';
 import { ArrowLeft, Calendar, Tag, User } from 'lucide-react';
 import { UserBadge } from '@/components/UserBadge';
 import ReactMarkdown from 'react-markdown';
@@ -23,6 +24,29 @@ const ArticleDetail = () => {
   useEffect(() => {
     if (initial) return; // already have mock article
     (async () => {
+      // Try static index first for zero-auth public
+      const indexed = await getPostFromIndex(id!);
+      if (indexed) {
+        const users = await getAllUsers();
+        const author = users.find(u => u.slug === indexed.author);
+        const mapped = {
+          id: id!,
+          title: indexed.title,
+          summary: indexed.description,
+          content: indexed.body,
+          status: 'PUBLISHED' as const,
+          authorId: 'cms',
+          author: { id: 'cms', email: author?.email || '', name: author?.name || 'Author', role: 'USER' as const, avatarUrl: author?.avatar },
+          categoryId: 'cms',
+          category: { id: 'cms', name: (indexed.category || 'General') as any, slug: String(indexed.category || 'general').toLowerCase() },
+          tags: (indexed.tags || []).map((t, i) => ({ id: String(i), name: t as any, slug: String(t).toLowerCase() })),
+          publishedAt: indexed.date,
+          createdAt: indexed.date,
+          updatedAt: indexed.date,
+        };
+        setCmsArticle(mapped as any);
+        return;
+      }
       const post = await getPostBySlug(id!);
       if (!post) return setCmsArticle(null);
       const users = await getAllUsers();

@@ -2,7 +2,8 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { mockArticleService, Article } from '@/lib/mockData';
-import { getAllPosts, getAllUsers } from '@/lib/contentUtils';
+import { getAllUsers } from '@/lib/contentUtils';
+import { loadContentIndex } from '@/lib/publicContent';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
@@ -16,7 +17,18 @@ const Home = () => {
   useEffect(() => {
     (async () => {
       try {
-        const posts = await getAllPosts();
+        // Prefer public content index for zero-auth public rendering
+        const publicPosts = await loadContentIndex();
+        const posts = publicPosts.map(p => ({
+          slug: p.slug,
+          title: p.title || '',
+          description: p.description || '',
+          date: p.date || '',
+          body: p.body,
+          tags: p.tags || [],
+          category: p.category || 'General',
+          author: p.author,
+        })) as any;
         if (!posts || posts.length === 0) return; // keep mock
         const users = await getAllUsers();
         const mapped: Article[] = posts.map((p, i) => {
