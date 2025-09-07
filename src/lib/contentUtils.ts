@@ -210,10 +210,15 @@ export const getAllUsers = async (): Promise<UserDoc[]> => {
   try {
     const baseUrl = getContentBaseUrl();
     const resp = await fetch(`${baseUrl}/content/users/manifest.json`);
-    if (!resp.ok) return [];
-    return await resp.json();
+    if (!resp.ok) {
+      console.log('[getAllUsers] No user manifest found, returning empty array');
+      return [];
+    }
+    const users = await resp.json();
+    console.log('[getAllUsers] Loaded users:', users.length);
+    return users;
   } catch (e) {
-    console.error('Error fetching users:', e);
+    console.log('[getAllUsers] Error fetching users (this is normal if no users exist):', e);
     return [];
   }
 };
