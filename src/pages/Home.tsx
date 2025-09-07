@@ -2,7 +2,6 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { mockArticleService, Article } from '@/lib/mockData';
-import { getAllUsers } from '@/lib/contentUtils';
 import { loadContentIndex } from '@/lib/publicContent';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,22 +26,21 @@ const Home = () => {
           return;
         }
         
-        const users = await getAllUsers();
+        // Skip user loading to avoid 404 errors - use default author info
         const mapped: Article[] = publicPosts.map((p, i) => {
-          const author = users.find(u => u.slug === (p.author as any));
           return {
             id: p.slug,
             title: p.title || '',
             summary: p.description || '',
             content: p.body || '',
             status: 'PUBLISHED' as const,
-            authorId: author?.slug || 'cms',
+            authorId: 'author',
             author: { 
-              id: author?.slug || 'cms', 
+              id: 'author', 
               email: '', 
-              name: author?.name || author?.github || 'Author', 
+              name: 'Author', 
               role: 'USER' as const, 
-              avatarUrl: author?.avatar 
+              avatarUrl: undefined 
             },
             categoryId: 'cms',
             category: { 

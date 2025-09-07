@@ -40,9 +40,8 @@ export interface UserDoc {
  * In development, you can use a local server or GitHub raw URLs
  */
 const getContentBaseUrl = (): string => {
-  // We can just fetch relative to the site root because static assets
-  // are bundled to the same structure on GitHub Pages.
-  return '';
+  // For GitHub Pages project sites, use the repo name as base path
+  return '/devnotes';
 };
 
 /**
