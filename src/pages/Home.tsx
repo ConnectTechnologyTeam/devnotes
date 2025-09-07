@@ -17,43 +17,53 @@ const Home = () => {
   useEffect(() => {
     (async () => {
       try {
-        // Prefer public content index for zero-auth public rendering
+        console.log('[Home] Loading content index...');
         const publicPosts = await loadContentIndex();
-        const posts = publicPosts.map(p => ({
-          slug: p.slug,
-          title: p.title || '',
-          description: p.description || '',
-          date: p.date || '',
-          body: p.body,
-          tags: p.tags || [],
-          category: p.category || 'General',
-          author: p.author,
-        })) as any;
-        if (!posts || posts.length === 0) {
+        console.log('[Home] Loaded posts:', publicPosts?.length || 0);
+        
+        if (!publicPosts || publicPosts.length === 0) {
+          console.log('[Home] No public posts, using mock data');
           setArticles(mockArticleService.getPublishedArticles());
           return;
         }
+        
         const users = await getAllUsers();
-        const mapped: Article[] = posts.map((p, i) => {
+        const mapped: Article[] = publicPosts.map((p, i) => {
           const author = users.find(u => u.slug === (p.author as any));
           return {
             id: p.slug,
-            title: p.title,
+            title: p.title || '',
             summary: p.description || '',
             content: p.body || '',
-            status: 'PUBLISHED',
+            status: 'PUBLISHED' as const,
             authorId: author?.slug || 'cms',
-            author: { id: author?.slug || 'cms', email: '', name: author?.name || author?.github || 'Author', role: 'USER', avatarUrl: author?.avatar },
+            author: { 
+              id: author?.slug || 'cms', 
+              email: '', 
+              name: author?.name || author?.github || 'Author', 
+              role: 'USER' as const, 
+              avatarUrl: author?.avatar 
+            },
             categoryId: 'cms',
-            category: { id: 'cms', name: (p.category as any) || 'General', slug: String(p.category || 'general').toLowerCase() },
-            tags: (p.tags || []).map((t: any, idx: number) => ({ id: String(idx), name: String(t), slug: String(t).toLowerCase() })),
+            category: { 
+              id: 'cms', 
+              name: (p.category as any) || 'General', 
+              slug: String(p.category || 'general').toLowerCase() 
+            },
+            tags: (p.tags || []).map((t: any, idx: number) => ({ 
+              id: String(idx), 
+              name: String(t), 
+              slug: String(t).toLowerCase() 
+            })),
             publishedAt: p.date,
             createdAt: p.date,
             updatedAt: p.date,
           };
         });
+        console.log('[Home] Mapped articles:', mapped.length);
         setArticles(mapped);
-      } catch {
+      } catch (error) {
+        console.error('[Home] Error loading content:', error);
         setArticles(mockArticleService.getPublishedArticles());
       }
     })();

@@ -22,9 +22,18 @@ export async function loadContentIndex() {
     './content-index.json',
     '/content-index.json',
   ];
-  const res = await tryFetch(candidatePaths);
-  const data = await res.json();
-  return data.posts as Array<{ slug: string; title?: string; date?: string; description?: string; tags?: string[]; category?: string; author?: string; body: string; draft?: boolean }>;
+  
+  console.log('[loadContentIndex] Trying paths:', candidatePaths);
+  
+  try {
+    const res = await tryFetch(candidatePaths);
+    const data = await res.json();
+    console.log('[loadContentIndex] Success, posts:', data.posts?.length || 0);
+    return data.posts as Array<{ slug: string; title?: string; date?: string; description?: string; tags?: string[]; category?: string; author?: string; body: string; draft?: boolean }>;
+  } catch (error) {
+    console.error('[loadContentIndex] Failed to load:', error);
+    throw error;
+  }
 }
 
 export async function getPostFromIndex(slug: string) {
