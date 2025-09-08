@@ -17,7 +17,8 @@
     <!-- Bridge: persist token then reload to "#/" -->
     <script>
       (function () {
-        var ORIGIN = location.origin; // https://connecttechnologyteam.github.io
+        // Accept messages from OAuth provider origin
+        var PROVIDER_ORIGIN = 'https://devnotes-oauth-provider.vercel.app';
         function save(tok){
           if(!tok) return;
           var p = JSON.stringify({ token: tok, provider: "github" });
@@ -35,7 +36,7 @@
         }
         // B) token via postMessage (from popup)
         window.addEventListener("message", function (ev) {
-          if (ev.origin !== ORIGIN) return; // only accept from same origin
+          if (ev.origin !== PROVIDER_ORIGIN) return; // only accept from OAuth provider
           var s = String(ev.data || "");
           if (!s.startsWith("authorization:github:")) return;
           var rest = s.replace("authorization:github:", "");
