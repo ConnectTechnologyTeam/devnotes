@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { mockArticleService, mockCategories, mockTags } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { createMarkdownFile } from '@/lib/githubApi';
 import { CheckCircle, XCircle, Clock, Users, FileText, Tag, Folder } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -46,17 +47,31 @@ const AdminDashboard = () => {
 
   const handleApprove = async (articleId: string) => {
     try {
+      // Get the article first
+      const article = mockArticleService.getArticleById(articleId);
+      if (!article) {
+        throw new Error('Article not found');
+      }
+
+      // Update status in localStorage
       await mockArticleService.updateArticle(articleId, {
         status: 'PUBLISHED',
         publishedAt: new Date().toISOString().split('T')[0],
       } as any);
-      setRefresh((c) => c + 1);
+
       toast({
         title: 'Article approved',
-        description: 'The article has been published successfully.',
+        description: 'Article approved locally. To publish publicly, use the CMS.',
       });
+
+      setRefresh((c) => c + 1);
     } catch (e) {
-      toast({ title: 'Failed to approve', variant: 'destructive' });
+      console.error('Approve error:', e);
+      toast({ 
+        title: 'Failed to approve', 
+        description: e instanceof Error ? e.message : 'Unknown error',
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -73,6 +88,45 @@ const AdminDashboard = () => {
       });
     } catch (e) {
       toast({ title: 'Failed to reject', variant: 'destructive' });
+    }
+  };
+
+  const handleCopyToCMS = async (article: any) => {
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const slug = article.id || article.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      
+      const filename = `${date}-${slug}.md`;
+      
+      const markdownContent = `---
+title: "${article.title}"
+date: ${date}
+author: ${article.author.name}
+description: "${article.summary}"
+tags: [${article.tags.map((t: any) => `"${t.name}"`).join(', ')}]
+category: "${article.category.name}"
+draft: false
+---
+
+${article.content}
+`;
+
+      await navigator.clipboard.writeText(markdownContent);
+      toast({
+        title: 'Content copied to clipboard',
+        description: `Article content copied. Create new post in CMS with filename: ${filename}`,
+      });
+    } catch (e) {
+      toast({ 
+        title: 'Failed to copy', 
+        description: 'Please copy the article content manually',
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -252,6 +306,15 @@ const AdminDashboard = () => {
                           
                           <Button variant="outline" asChild>
                             <a href={`#/articles/${article.id}`}>View Full Article</a>
+                          </Button>
+
+                          <Button 
+                            variant="secondary" 
+                            onClick={() => handleCopyToCMS(article)}
+                            className="space-x-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span>Copy to CMS</span>
                           </Button>
                         </div>
                       </CardContent>
