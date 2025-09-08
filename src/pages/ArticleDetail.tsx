@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ArticleDetail = () => {
   const { id } = useParams<{ id: string }>();
-  let initial = mockArticleService.getArticleById(id!);
+  let initial = undefined as any;
   const [cmsArticle, setCmsArticle] = useState<typeof initial | null>(initial);
   const { user } = useAuth();
   const navigate = useNavigate();

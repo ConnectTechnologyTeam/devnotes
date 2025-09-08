@@ -1,7 +1,7 @@
 import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
-import { mockArticleService, Article } from '@/lib/mockData';
+import { Article } from '@/lib/mockData';
 import { loadContentIndex } from '@/lib/publicContent';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +11,7 @@ import { ArrowRight, BookOpen, Code, Lightbulb } from 'lucide-react';
 
 const Home = () => {
   const { user } = useAuth();
-  const [articles, setArticles] = useState<Article[]>(mockArticleService.getPublishedArticles());
+  const [articles, setArticles] = useState<Article[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -21,8 +21,7 @@ const Home = () => {
         console.log('[Home] Loaded posts:', publicPosts?.length || 0);
         
         if (!publicPosts || publicPosts.length === 0) {
-          console.log('[Home] No public posts, using mock data');
-          setArticles(mockArticleService.getPublishedArticles());
+          setArticles([]);
           return;
         }
         
@@ -62,7 +61,7 @@ const Home = () => {
         setArticles(mapped);
       } catch (error) {
         console.error('[Home] Error loading content:', error);
-        setArticles(mockArticleService.getPublishedArticles());
+        setArticles([]);
       }
     })();
   }, []);

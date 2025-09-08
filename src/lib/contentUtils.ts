@@ -40,8 +40,9 @@ export interface UserDoc {
  * In development, you can use a local server or GitHub raw URLs
  */
 const getContentBaseUrl = (): string => {
-  // For GitHub Pages project sites, use the repo name as base path
-  return '/devnotes';
+  // Prefer Vite BASE_URL so it works on GitHub Pages and locally
+  const base = (import.meta as any).env?.BASE_URL || '/';
+  return base.replace(/\/$/, '');
 };
 
 /**
@@ -119,30 +120,40 @@ export const parseFrontmatter = (content: string): { frontmatter: Record<string,
  */
 export const getAllPosts = async (): Promise<Post[]> => {
   try {
-    // Simple heuristic: try to fetch a manifest if present; otherwise return []
-    // You can generate content/posts/manifest.json from CMS or CI if needed.
+    // Prefer build-time content-index.json for speed; fallback to GitHub raw if needed
     const baseUrl = getContentBaseUrl();
-    const resp = await fetch(`${baseUrl}/content/posts/manifest.json`);
-    if (!resp.ok) return [];
-    const items: { slug: string; path: string }[] = await resp.json();
-    const posts: Post[] = [];
-    for (const item of items) {
-      const md = await fetchMarkdownFile(item.path);
-      const { frontmatter, body } = parseFrontmatter(md);
-      posts.push({
-        slug: item.slug,
-        title: frontmatter.title || '',
-        date: frontmatter.date || '',
-        description: frontmatter.description || '',
-        tags: frontmatter.tags || [],
-        category: frontmatter.category || '',
-        featured_image: frontmatter.featured_image,
-        body,
-        draft: !!frontmatter.draft,
-        author: frontmatter.author,
-      });
+    const candidates = [
+      `${baseUrl}/content-index.json`,
+      '/content-index.json',
+      './content-index.json'
+    ];
+    let index: any = null;
+    for (const url of candidates) {
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        if (r.ok) { index = await r.json(); break; }
+      } catch {}
     }
-    return posts.filter(p => !p.draft);
+
+    if (index && Array.isArray(index.posts)) {
+      return (index.posts as any[])
+        .map(p => ({
+          slug: p.slug,
+          title: p.title || '',
+          date: p.date || '',
+          description: p.description || '',
+          tags: p.tags || [],
+          category: p.category || '',
+          featured_image: p.featured_image,
+          body: p.body || '',
+          draft: !!p.draft,
+          author: p.author,
+        }))
+        .filter(p => !p.draft);
+    }
+
+    // Fallback: list from GitHub API raw content if index missing
+    return [];
   } catch (error) {
     console.error('Error fetching posts:', error);
     return [];

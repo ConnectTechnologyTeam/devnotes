@@ -1,11 +1,11 @@
 import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
-import { Article, mockArticleService } from '@/lib/mockData';
+import { Article } from '@/lib/mockData';
 import { useEffect, useState } from 'react';
 import { loadContentIndex } from '@/lib/publicContent';
 
 const Articles = () => {
-  const [publishedArticles, setPublishedArticles] = useState<Article[]>(mockArticleService.getPublishedArticles());
+  const [publishedArticles, setPublishedArticles] = useState<Article[]>([]);
   useEffect(() => {
     (async () => {
       try {
