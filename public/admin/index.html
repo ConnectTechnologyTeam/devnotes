@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Content Manager</title>
 
+    <script>window.CMS_MANUAL_INIT = true;</script>
+
     <!-- 1) Normalize bad hashes early: "/#/access_token=..." -> "#access_token=..." -->
     <script>
       (function () {
@@ -70,24 +72,38 @@
     <!-- 3) Load Decap AFTER the bridge -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
 
-    <!-- 4) After Decap loads, rebroadcast stored token to ensure CMS receives it -->
+    <!-- 4) Manual init: if token exists, bootstrap CMS with it to bypass login -->
     <script>
-      (function reBroadcastStoredToken() {
-        try {
-          var stored = localStorage.getItem("decap-cms-user") || localStorage.getItem("netlify-cms.user") || localStorage.getItem("decap-cms-auth");
-          if (!stored) return;
-          var token = stored;
-          try { token = JSON.parse(stored).token || stored; } catch(_) {}
-          var m1 = 'authorization:github:' + JSON.stringify({ token: token, provider: 'github' });
-          var m2 = 'authorization:github:' + JSON.stringify({ token: token });
-          var m3 = 'authorization:github:' + token;
-          var n = 0; var iv = setInterval(function(){
-            try { window.postMessage(m1, '*'); } catch(_) {}
-            try { window.postMessage(m2, '*'); } catch(_) {}
-            try { window.postMessage(m3, '*'); } catch(_) {}
-            if (++n >= 25) clearInterval(iv);
-          }, 120);
-        } catch (e) {}
+      (function () {
+        function getToken() {
+          var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
+          if (!raw) return null;
+          try { return JSON.parse(raw).token || raw; } catch { return raw; }
+        }
+        function initWithToken(tok) {
+          if (!window.CMS || !tok) return;
+          // Read config.yml at runtime is default; we only override backend token
+          const backend = {
+            name: 'github',
+            repo: 'ConnectTechnologyTeam/devnotes',
+            branch: 'main',
+            base_url: 'https://devnotes-oauth-provider.vercel.app',
+            auth_endpoint: '/api/auth',
+            token: tok,
+          };
+          window.CMS.init({ config: { backend } });
+        }
+        function initNormally() {
+          if (!window.CMS) return;
+          window.CMS.init();
+        }
+        var tok = getToken();
+        if (tok) {
+          // Try init with token; if it fails (no permissions), fall back to normal init
+          try { initWithToken(tok); } catch (e) { initNormally(); }
+        } else {
+          initNormally();
+        }
       })();
     </script>
   </body>
