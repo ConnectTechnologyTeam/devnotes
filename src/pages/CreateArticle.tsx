@@ -41,17 +41,7 @@ const CreateArticle = () => {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-8">Please log in to create articles.</p>
-        </div>
-      </div>
-    );
-  }
+  // Creation is handled by CMS; show link instead of form when not logged in
 
   const handleTagChange = (tagId: string, checked: boolean) => {
     if (checked) {
@@ -62,95 +52,11 @@ const CreateArticle = () => {
   };
 
   const handleSaveDraft = async () => {
-    if (!title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please enter a title for your article.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
-      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
-      
-      await mockArticleService.createArticle({
-        title: title.trim(),
-        summary: summary.trim() || 'No summary provided',
-        content: content.trim() || 'No content provided',
-        status: 'DRAFT',
-        authorId: user!.id,
-        categoryId: categoryId || mockCategories[0].id,
-        category: selectedCategory || mockCategories[0],
-        tags: selectedTagsData,
-      });
-
-      toast({
-        title: "Draft saved",
-        description: "Your article has been saved as a draft.",
-      });
-      navigate('/my-articles');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save draft. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({ title: 'Use CMS', description: 'Please use the Admin CMS to create or save posts.' });
   };
 
   const handleSubmitForReview = async () => {
-    if (!title.trim() || !summary.trim() || !content.trim() || !categoryId) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields before submitting.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
-      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
-      
-      // If user is admin, publish directly, otherwise submit for review
-      const status = user!.role === 'ADMIN' ? 'PUBLISHED' : 'PENDING';
-      
-      await mockArticleService.createArticle({
-        title: title.trim(),
-        summary: summary.trim(),
-        content: content.trim(),
-        status,
-        authorId: user!.id,
-        categoryId: categoryId,
-        category: selectedCategory!,
-        tags: selectedTagsData,
-        publishedAt: status === 'PUBLISHED' ? new Date().toISOString().split('T')[0] : undefined,
-      });
-
-      toast({
-        title: status === 'PUBLISHED' ? "Article published" : "Article submitted",
-        description: status === 'PUBLISHED' 
-          ? "Your article has been published successfully." 
-          : "Your article has been submitted for review.",
-      });
-      navigate('/my-articles');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit article. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({ title: 'Use CMS', description: 'Publishing is handled by the CMS at /admin.' });
   };
 
   return (
