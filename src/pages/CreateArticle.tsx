@@ -52,11 +52,25 @@ const CreateArticle = () => {
   };
 
   const handleSaveDraft = async () => {
-    toast({ title: 'Use CMS', description: 'Please use the Admin CMS to create or save posts.' });
+    toast({ 
+      title: 'Redirecting to CMS', 
+      description: 'Redirecting to CMS for article creation...' 
+    });
+    // Redirect to CMS after a short delay
+    setTimeout(() => {
+      window.location.href = '/admin';
+    }, 1000);
   };
 
   const handleSubmitForReview = async () => {
-    toast({ title: 'Use CMS', description: 'Publishing is handled by the CMS at /admin.' });
+    toast({ 
+      title: 'Redirecting to CMS', 
+      description: 'Redirecting to CMS for article publishing...' 
+    });
+    // Redirect to CMS after a short delay
+    setTimeout(() => {
+      window.location.href = '/admin';
+    }, 1000);
   };
 
   return (
