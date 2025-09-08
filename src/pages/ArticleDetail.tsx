@@ -22,51 +22,62 @@ const ArticleDetail = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (initial) return; // already have mock article
+    // First try to find in mock articles (for user-created articles)
+    const mockArticle = mockArticleService.getArticleById(slug!);
+    if (mockArticle) {
+      setCmsArticle(mockArticle);
+      return;
+    }
+
+    // Then try static index for CMS articles
     (async () => {
-      // Try static index first for zero-auth public
-      const indexed = await getPostFromIndex(slug!);
-      if (indexed) {
+      try {
+        const indexed = await getPostFromIndex(slug!);
+        if (indexed) {
+          const users = await getAllUsers();
+          const author = users.find(u => u.slug === indexed.author);
+          const mapped = {
+            id: slug!,
+            title: indexed.title,
+            summary: indexed.description,
+            content: indexed.body,
+            status: 'PUBLISHED' as const,
+            authorId: 'cms',
+            author: { id: 'cms', email: author?.email || '', name: author?.name || 'Author', role: 'USER' as const, avatarUrl: author?.avatar },
+            categoryId: 'cms',
+            category: { id: 'cms', name: (indexed.category || 'General') as any, slug: String(indexed.category || 'general').toLowerCase() },
+            tags: (indexed.tags || []).map((t, i) => ({ id: String(i), name: t as any, slug: String(t).toLowerCase() })),
+            publishedAt: indexed.date,
+            createdAt: indexed.date,
+            updatedAt: indexed.date,
+          };
+          setCmsArticle(mapped as any);
+          return;
+        }
+        const post = await getPostBySlug(slug!);
+        if (!post) return setCmsArticle(null);
         const users = await getAllUsers();
-        const author = users.find(u => u.slug === indexed.author);
+        const author = users.find(u => u.slug === post.author);
         const mapped = {
           id: slug!,
-          title: indexed.title,
-          summary: indexed.description,
-          content: indexed.body,
+          title: post.title,
+          summary: post.description,
+          content: post.body,
           status: 'PUBLISHED' as const,
           authorId: 'cms',
           author: { id: 'cms', email: author?.email || '', name: author?.name || 'Author', role: 'USER' as const, avatarUrl: author?.avatar },
           categoryId: 'cms',
-          category: { id: 'cms', name: (indexed.category || 'General') as any, slug: String(indexed.category || 'general').toLowerCase() },
-          tags: (indexed.tags || []).map((t, i) => ({ id: String(i), name: t as any, slug: String(t).toLowerCase() })),
-          publishedAt: indexed.date,
-          createdAt: indexed.date,
-          updatedAt: indexed.date,
+          category: { id: 'cms', name: post.category || 'General', slug: (post.category || 'general').toLowerCase() },
+          tags: (post.tags || []).map((t, i) => ({ id: String(i), name: t, slug: String(t).toLowerCase() })),
+          publishedAt: post.date,
+          createdAt: post.date,
+          updatedAt: post.date,
         };
         setCmsArticle(mapped as any);
-        return;
+      } catch (error) {
+        console.error('Error loading article:', error);
+        setCmsArticle(null);
       }
-      const post = await getPostBySlug(slug!);
-      if (!post) return setCmsArticle(null);
-      const users = await getAllUsers();
-      const author = users.find(u => u.slug === post.author);
-      const mapped = {
-        id: slug!,
-        title: post.title,
-        summary: post.description,
-        content: post.body,
-        status: 'PUBLISHED' as const,
-        authorId: 'cms',
-        author: { id: 'cms', email: author?.email || '', name: author?.name || 'Author', role: 'USER' as const, avatarUrl: author?.avatar },
-        categoryId: 'cms',
-        category: { id: 'cms', name: post.category || 'General', slug: (post.category || 'general').toLowerCase() },
-        tags: (post.tags || []).map((t, i) => ({ id: String(i), name: t, slug: String(t).toLowerCase() })),
-        publishedAt: post.date,
-        createdAt: post.date,
-        updatedAt: post.date,
-      };
-      setCmsArticle(mapped as any);
     })();
   }, [slug]);
 

@@ -202,8 +202,16 @@ export const mockArticleService = {
       throw new Error('User must be logged in to create articles');
     }
 
+    // Create a slug from title for routing
+    const slug = articleData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+
     const newArticle: Article = {
-      id: Date.now().toString(),
+      id: slug, // Use slug as ID for routing
       ...articleData,
       author: user,
       createdAt: new Date().toISOString().split('T')[0],
@@ -215,8 +223,30 @@ export const mockArticleService = {
     return newArticle;
   },
 
-  updateArticle: async (): Promise<Article> => {
-    throw new Error('Article updates are handled by CMS. Please use /admin.');
+  updateArticle: async (id: string, updates: Partial<Article>): Promise<Article> => {
+    const index = mockArticles.findIndex(article => article.id === id);
+    if (index === -1) {
+      throw new Error('Article not found');
+    }
+
+    const user = mockAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be logged in to update articles');
+    }
+
+    // Check if user owns the article or is admin
+    if (mockArticles[index].authorId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('You can only update your own articles');
+    }
+
+    mockArticles[index] = {
+      ...mockArticles[index],
+      ...updates,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    saveArticlesToStorage();
+    return mockArticles[index];
   },
 
   deleteArticle: async (): Promise<void> => {
