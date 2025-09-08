@@ -110,23 +110,16 @@ const CreateArticle = () => {
       const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
       const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
       
-      // Submit for review (admin will approve via CMS)
-      await mockArticleService.createArticle({
-        title: title.trim(),
-        summary: summary.trim(),
-        content: content.trim(),
-        status: 'PENDING',
-        authorId: user!.id,
-        categoryId: categoryId,
-        category: selectedCategory!,
-        tags: selectedTagsData,
-      });
-
+      // Redirect to CMS for editorial workflow
       toast({
-        title: "Article submitted",
-        description: "Your article has been submitted for review. Admin will approve it soon.",
+        title: "Redirecting to CMS",
+        description: "You will create your article in the CMS for editorial review.",
       });
-      navigate('/my-articles');
+      
+      // Small delay to show toast, then redirect
+      setTimeout(() => {
+        window.location.href = '/devnotes/admin/';
+      }, 1500);
     } catch (error) {
       toast({
         title: "Error",

@@ -1,0 +1,45 @@
+name: Auto-merge admin posts
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  ADMIN_LOGINS: "lengoctruong,connecttechnologyteam"   # GitHub usernames of admins
+
+jobs:
+  auto_merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check author
+        id: check
+        run: |
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "PR Author: $PR_AUTHOR"
+          echo "Admin logins: $ADMIN_LOGINS"
+          
+          if echo ",$ADMIN_LOGINS," | grep -qi ",$PR_AUTHOR,"; then
+            echo "is_admin=true" >> $GITHUB_OUTPUT
+            echo "✅ Author $PR_AUTHOR is an admin - will auto-merge"
+          else
+            echo "is_admin=false" >> $GITHUB_OUTPUT
+            echo "❌ Author $PR_AUTHOR is not an admin - requires manual review"
+          fi
+
+      - name: Auto-merge if admin
+        if: steps.check.outputs.is_admin == 'true'
+        run: |
+          echo "🤖 Auto-merging PR #${{ github.event.pull_request.number }} by admin ${{ github.event.pull_request.user.login }}"
+          gh pr merge "${{ github.event.pull_request.number }}" --merge --admin --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log non-admin PR
+        if: steps.check.outputs.is_admin == 'false'
+        run: |
+          echo "📝 PR #${{ github.event.pull_request.number }} by ${{ github.event.pull_request.user.login }} requires manual review"
+          echo "🔗 PR URL: ${{ github.event.pull_request.html_url }}"

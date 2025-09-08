@@ -2,13 +2,12 @@ backend:
   name: github
   repo: connecttechnologyteam/devnotes
   branch: main
-  publish_mode: simple
+  publish_mode: editorial_workflow
   site_url: https://connecttechnologyteam.github.io/devnotes
 
 # Media storage
-# Media storage
 media_folder: "public/uploads"
-public_folder: "/uploads"
+public_folder: "/devnotes/uploads"
 
 # Collections
 collections:
@@ -40,6 +39,7 @@ collections:
         value_field: "{{slug}}"
         search_fields: ["name","github"]
         display_fields: ["name","github"]
+      - { name: role, label: "Author Role", widget: "select", options: ["admin","author"], required: false }
       - { name: description, label: Summary, widget: text, required: false }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: featured_image, label: Featured Image, widget: image, required: false }

@@ -29,10 +29,15 @@ function main() {
     fs.mkdirSync(OUT_DIR, { recursive: true });
     fs.writeFileSync(
       OUT_FILE,
-      JSON.stringify({ generatedAt: new Date().toISOString(), posts: published }, null, 2),
+      JSON.stringify({ 
+        generatedAt: new Date().toISOString(), 
+        branch: 'main',
+        source: 'content/posts (main branch only)',
+        posts: published 
+      }, null, 2),
       'utf8'
     );
-    console.log('[build-content] Wrote', OUT_FILE, 'posts:', published.length);
+    console.log('[build-content] Wrote', OUT_FILE, 'posts:', published.length, '(main branch only, drafts filtered)');
   } catch (e) {
     console.error('[build-content] Failed:', e);
     process.exitCode = 0; // do not fail build if content missing
