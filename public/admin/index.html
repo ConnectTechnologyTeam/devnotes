@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Content Manager</title>
 
-    <!-- Normalize bad hashes -->
     <script>
       (function () {
         var h = location.hash || "";
@@ -14,11 +13,11 @@
       })();
     </script>
 
-    <!-- Bridge: persist token then reload to "#/" -->
     <script>
       (function () {
-        // Accept messages from OAuth provider origin
         var PROVIDER_ORIGIN = 'https://devnotes-oauth-provider.vercel.app';
+        var SELF_ORIGIN = location.origin;
+        function log(){ try { console.log.apply(console, arguments); } catch(_) {} }
         function save(tok){
           if(!tok) return;
           var p = JSON.stringify({ token: tok, provider: "github" });
@@ -26,22 +25,24 @@
             localStorage.setItem("netlify-cms.user", p);
             localStorage.setItem("decap-cms-user", p);
             localStorage.setItem("decap-cms-auth", p);
-          } catch {}
+            log('[admin] token saved');
+          } catch(e){ log('[admin] save error', e); }
         }
-        // A) token via hash
         var m = (location.hash || "").match(/access_token=([^&]+)/);
         if (m) {
           save(decodeURIComponent(m[1]));
           return location.replace(location.pathname + "#/");
         }
-        // B) token via postMessage (from popup)
         window.addEventListener("message", function (ev) {
-          if (ev.origin !== PROVIDER_ORIGIN) return; // only accept from OAuth provider
+          if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) {
+            return;
+          }
           var s = String(ev.data || "");
           if (!s.startsWith("authorization:github:")) return;
           var rest = s.replace("authorization:github:", "");
           var tok = rest;
-          try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch {}
+          try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
+          log('[admin] received token from', ev.origin);
           save(tok);
           location.replace(location.pathname + "#/");
         }, false);
