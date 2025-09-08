@@ -47,11 +47,30 @@
           location.reload();
         }, false);
         
-        // If we already have token, log it (CMS should auto-init with it)
-        var existingToken = getStoredToken();
-        if (existingToken) {
-          log('[admin] existing token found, CMS should auto-authenticate');
-        }
+        // Manual CMS init with existing token
+        window.addEventListener('DOMContentLoaded', function() {
+          var existingToken = getStoredToken();
+          if (existingToken && window.CMS) {
+            log('[admin] manually initializing CMS with stored token');
+            try {
+              window.CMS.init({
+                config: {
+                  backend: {
+                    name: 'github',
+                    repo: 'ConnectTechnologyTeam/devnotes',
+                    branch: 'main',
+                    base_url: 'https://devnotes-oauth-provider.vercel.app',
+                    auth_endpoint: '/api/auth'
+                  }
+                }
+              });
+            } catch(e) {
+              log('[admin] manual init error:', e);
+            }
+          } else if (existingToken) {
+            log('[admin] token found but CMS not ready, waiting...');
+          }
+        });
       })();
     </script>
 
