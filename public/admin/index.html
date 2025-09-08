@@ -79,6 +79,95 @@
   </head>
   <body>
     <div class="boot">Loading Content Manager…</div>
+    <script>
+      window.CMS_MANUAL_INIT = true; // Disable auto-init
+    </script>
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <script>
+      // Manual init after CMS loads
+      (function() {
+        function initCMS() {
+          var existingToken = (function(){
+            var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
+            if(!raw) return null;
+            try { return JSON.parse(raw).token || raw; } catch { return raw; }
+          })();
+          
+          console.log('[admin] Manual CMS init, token exists:', !!existingToken);
+          
+          if (existingToken) {
+            // Init with pre-authenticated state
+            window.CMS.init({
+              config: {
+                backend: {
+                  name: 'github',
+                  repo: 'ConnectTechnologyTeam/devnotes',
+                  branch: 'main'
+                },
+                media_folder: 'public/uploads',
+                public_folder: '/devnotes/uploads',
+                publish_mode: 'editorial_workflow',
+                collections: [
+                  {
+                    name: 'posts',
+                    label: 'Posts',
+                    folder: 'content/posts',
+                    create: true,
+                    slug: '{{year}}-{{month}}-{{day}}-{{slug}}',
+                    fields: [
+                      { name: 'title', label: 'Title' },
+                      { name: 'date', label: 'Date', widget: 'datetime' },
+                      { name: 'author', label: 'Author' },
+                      { name: 'description', label: 'Summary', widget: 'text', required: false },
+                      { name: 'tags', label: 'Tags', widget: 'list', required: false },
+                      { name: 'draft', label: 'Draft', widget: 'boolean', default: false },
+                      { name: 'body', label: 'Body', widget: 'markdown' }
+                    ]
+                  }
+                ]
+              }
+            });
+            
+            // Force set user after init
+            setTimeout(function() {
+              try {
+                var backend = window.CMS.getBackend();
+                if (backend) {
+                  backend.currentUser = function() {
+                    return Promise.resolve({ 
+                      login: 'authenticated-user',
+                      name: 'Authenticated User',
+                      token: existingToken 
+                    });
+                  };
+                  console.log('[admin] Forced backend authentication');
+                }
+              } catch(e) {
+                console.error('[admin] Force auth error:', e);
+              }
+            }, 1000);
+          } else {
+            // Init normally for login
+            window.CMS.init({
+              config: {
+                backend: {
+                  name: 'github',
+                  repo: 'ConnectTechnologyTeam/devnotes',
+                  branch: 'main',
+                  base_url: 'https://devnotes-oauth-provider.vercel.app',
+                  auth_endpoint: '/api/auth'
+                }
+              }
+            });
+          }
+        }
+        
+        if (window.CMS) {
+          initCMS();
+        } else {
+          window.addEventListener('load', initCMS);
+        }
+      })();
+    </script>
   </body>
 </html>
