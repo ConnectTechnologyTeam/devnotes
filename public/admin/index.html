@@ -5,101 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Content Manager</title>
 
-    <script>window.CMS_MANUAL_INIT = true;</script>
-
-    <!-- 1) Normalize bad hashes early: "/#/access_token=..." -> "#access_token=..." -->
+    <!-- Normalize bad hashes -->
     <script>
       (function () {
-        var h = window.location.hash || "";
-        if (h.indexOf("/access_token=") === 1) {
-          var fixed = "#" + h.slice(2);
-          window.location.replace(window.location.pathname + fixed);
-          return;
-        }
-        if (h.indexOf("#access_token=") === 1) {
-          var fixed2 = "#" + h.slice(2);
-          window.location.replace(window.location.pathname + fixed2);
-          return;
-        }
+        var h = location.hash || "";
+        if (h.indexOf("/access_token=") === 1) return location.replace(location.pathname + "#" + h.slice(2));
+        if (h.indexOf("#access_token=") === 1) return location.replace(location.pathname + "#" + h.slice(2));
       })();
     </script>
 
-    <!-- 2) Bridge: receive OAuth token via postMessage or URL hash, persist to localStorage, then reload to "#/" -->
+    <!-- Bridge: persist token then reload to "#/" -->
     <script>
       (function () {
-        function saveToken(tok) {
-          if (!tok) return;
+        var ORIGIN = location.origin; // https://connecttechnologyteam.github.io
+        function save(tok){
+          if(!tok) return;
+          var p = JSON.stringify({ token: tok, provider: "github" });
           try {
-            var payload = JSON.stringify({ token: tok, provider: "github" });
-            localStorage.setItem("netlify-cms.user", payload);
-            localStorage.setItem("decap-cms-user", payload);
-            localStorage.setItem("decap-cms-auth", payload);
-          } catch (e) {}
+            localStorage.setItem("netlify-cms.user", p);
+            localStorage.setItem("decap-cms-user", p);
+            localStorage.setItem("decap-cms-auth", p);
+          } catch {}
         }
-
-        var m = (window.location.hash || "").match(/access_token=([^&]+)/);
+        // A) token via hash
+        var m = (location.hash || "").match(/access_token=([^&]+)/);
         if (m) {
-          saveToken(decodeURIComponent(m[1]));
-          window.location.replace(window.location.pathname + "#/");
+          save(decodeURIComponent(m[1]));
+          return location.replace(location.pathname + "#/");
         }
-
-        window.addEventListener(
-          "message",
-          function (ev) {
-            try {
-              var data = String(ev.data || "");
-              if (!data.startsWith("authorization:github:")) return;
-              var rest = data.replace("authorization:github:", "");
-              var tok = rest;
-              if (rest.startsWith("{")) tok = JSON.parse(rest).token;
-              saveToken(tok);
-              window.location.replace(window.location.pathname + "#/");
-            } catch (e) {}
-          },
-          false
-        );
+        // B) token via postMessage (from popup)
+        window.addEventListener("message", function (ev) {
+          if (ev.origin !== ORIGIN) return; // only accept from same origin
+          var s = String(ev.data || "");
+          if (!s.startsWith("authorization:github:")) return;
+          var rest = s.replace("authorization:github:", "");
+          var tok = rest;
+          try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch {}
+          save(tok);
+          location.replace(location.pathname + "#/");
+        }, false);
       })();
     </script>
 
     <style>
-      html, body { height: 100%; margin: 0; }
-      body { display: grid; place-items: center; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f7f7f9; }
-      .boot { color: #667; opacity: .75; font-size: 12px; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); }
+      html,body{height:100%;margin:0}
+      body{display:grid;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f7f7f9}
+      .boot{color:#667;opacity:.75;font-size:12px;position:fixed;top:8px;left:50%;transform:translateX(-50%)}
     </style>
   </head>
   <body>
     <div class="boot">Loading Content Manager…</div>
-    <!-- 3) Load Decap AFTER the bridge -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
-
-    <!-- 4) Manual init: if token exists, bootstrap CMS with it to bypass login -->
-    <script>
-      (function () {
-        function getToken() {
-          var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
-          if (!raw) return null;
-          try { return JSON.parse(raw).token || raw; } catch { return raw; }
-        }
-        function initWithToken(tok) {
-          // Decap reads token from localStorage; we only need to init
-          window.CMS.init();
-        }
-        function initNormally() {
-          window.CMS.init();
-        }
-        function whenCMSReady(cb) {
-          var tries = 0;
-          (function wait(){
-            if (window.CMS && typeof window.CMS.init === 'function') return cb();
-            if (++tries > 100) return; // ~10s max
-            setTimeout(wait, 100);
-          })();
-        }
-        var tok = getToken();
-        whenCMSReady(function(){
-          if (tok) initWithToken(tok); else initNormally();
-        });
-      })();
-    </script>
   </body>
 </html>
