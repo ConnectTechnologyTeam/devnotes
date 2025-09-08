@@ -18,7 +18,7 @@
         var PROVIDER_ORIGIN = 'https://devnotes-oauth-provider.vercel.app';
         var SELF_ORIGIN = location.origin;
         function log(){ try { console.log.apply(console, arguments); } catch(_) {} }
-        function save(tok){
+        function persist(tok){
           if(!tok) return;
           var p = JSON.stringify({ token: tok, provider: "github" });
           try {
@@ -27,27 +27,38 @@
             localStorage.setItem("decap-cms-auth", p);
             log('[admin] token saved');
           } catch(e){ log('[admin] save error', e); }
-          // Set legacy hash so Decap's internal auth handler can pick it up
-          try {
-            location.replace(location.pathname + '#access_token=' + encodeURIComponent(tok));
-          } catch(_) { location.reload(); }
         }
-        var m = (location.hash || "").match(/access_token=([^&]+)/);
-        if (m) {
-          // token present in hash already -> just proceed
-          log('[admin] legacy hash token detected');
+        function rebroadcast(tok){
+          if(!tok) return;
+          var m1 = 'authorization:github:' + JSON.stringify({ token: tok, provider: 'github' });
+          var m2 = 'authorization:github:' + JSON.stringify({ token: tok });
+          var m3 = 'authorization:github:' + tok;
+          var n=0; var iv=setInterval(function(){
+            try { window.postMessage(m1, SELF_ORIGIN); } catch(_) {}
+            try { window.postMessage(m2, SELF_ORIGIN); } catch(_) {}
+            try { window.postMessage(m3, SELF_ORIGIN); } catch(_) {}
+            if(++n>=25) clearInterval(iv);
+          },120);
         }
+        function getStoredToken(){
+          var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
+          if(!raw) return null;
+          try { return JSON.parse(raw).token || raw; } catch { return raw; }
+        }
+        // If token already stored (from previous login), rebroadcast so CMS picks it up
+        (function(){ var t = getStoredToken(); if (t){ log('[admin] rebroadcast stored token'); rebroadcast(t); } })();
+
+        // Listen for token from popup and rebroadcast without reloading
         window.addEventListener("message", function (ev) {
-          if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) {
-            return;
-          }
+          if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) return;
           var s = String(ev.data || "");
           if (!s.startsWith("authorization:github:")) return;
           var rest = s.replace("authorization:github:", "");
           var tok = rest;
           try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
           log('[admin] received token from', ev.origin);
-          save(tok);
+          persist(tok);
+          rebroadcast(tok);
         }, false);
       })();
     </script>
