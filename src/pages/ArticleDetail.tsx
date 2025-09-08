@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const ArticleDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   let initial = undefined as any;
   const [cmsArticle, setCmsArticle] = useState<typeof initial | null>(initial);
   const { user } = useAuth();
@@ -25,12 +25,12 @@ const ArticleDetail = () => {
     if (initial) return; // already have mock article
     (async () => {
       // Try static index first for zero-auth public
-      const indexed = await getPostFromIndex(id!);
+      const indexed = await getPostFromIndex(slug!);
       if (indexed) {
         const users = await getAllUsers();
         const author = users.find(u => u.slug === indexed.author);
         const mapped = {
-          id: id!,
+          id: slug!,
           title: indexed.title,
           summary: indexed.description,
           content: indexed.body,
@@ -47,12 +47,12 @@ const ArticleDetail = () => {
         setCmsArticle(mapped as any);
         return;
       }
-      const post = await getPostBySlug(id!);
+      const post = await getPostBySlug(slug!);
       if (!post) return setCmsArticle(null);
       const users = await getAllUsers();
       const author = users.find(u => u.slug === post.author);
       const mapped = {
-        id: id!,
+        id: slug!,
         title: post.title,
         summary: post.description,
         content: post.body,
@@ -68,7 +68,7 @@ const ArticleDetail = () => {
       };
       setCmsArticle(mapped as any);
     })();
-  }, [id]);
+  }, [slug]);
 
   const article = initial ?? cmsArticle ?? undefined;
 

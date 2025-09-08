@@ -42,7 +42,6 @@ collections:
         search_fields: ["name","github"]
         display_fields: ["name","github"]
       - { name: description, label: Summary, widget: text, required: false }
-      - { name: categories, label: Categories, widget: select, multiple: true, options: ["Java","Spring","Microservices","Architecture"] }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: featured_image, label: Featured Image, widget: image, required: false }
       - { name: body, label: Body, widget: markdown }
