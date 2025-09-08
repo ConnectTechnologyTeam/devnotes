@@ -1,10 +1,10 @@
 backend:
   name: github
-  repo: YOUR_USERNAME/YOUR_REPO_NAME # Replace with your GitHub username and repo name
+  repo: connecttechnologyteam/devnotes
   branch: main
   publish_mode: simple
-  base_url: https://YOUR_OAUTH_DOMAIN # Replace with your OAuth provider domain
-  site_url: https://YOUR_USERNAME.github.io/YOUR_REPO_NAME # Replace with your GitHub Pages URL
+  base_url: https://devnotes-oauth.vercel.app
+  site_url: https://connecttechnologyteam.github.io/devnotes
 
 # Media storage
 # Media storage
