@@ -214,7 +214,21 @@ const ArticleDetail = () => {
                   className="w-full sm:w-auto min-h-[44px]"
                   onClick={async () => {
                     try {
-                      await mockArticleService.deleteArticle(article.id);
+                      // Check if it's a mock article or CMS article
+                      if (initial) {
+                        // It's a mock article, use mockArticleService
+                        await mockArticleService.deleteArticle(article.id);
+                      } else {
+                        // It's a CMS article, we need to delete the markdown file
+                        // For now, show a message that CMS articles can't be deleted from here
+                        toast({
+                          title: 'CMS Article',
+                          description: 'This article is managed by CMS. Please delete it from the CMS admin panel.',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      
                       toast({
                         title: 'Article deleted',
                         description: 'The article has been removed successfully.',
