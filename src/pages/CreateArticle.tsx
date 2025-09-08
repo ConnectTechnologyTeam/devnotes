@@ -58,7 +58,7 @@ const CreateArticle = () => {
     });
     // Redirect to CMS after a short delay
     setTimeout(() => {
-      window.location.href = '/admin';
+      window.location.href = '/devnotes/admin/';
     }, 1000);
   };
 
@@ -69,7 +69,7 @@ const CreateArticle = () => {
     });
     // Redirect to CMS after a short delay
     setTimeout(() => {
-      window.location.href = '/admin';
+      window.location.href = '/devnotes/admin/';
     }, 1000);
   };
 
