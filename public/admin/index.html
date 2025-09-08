@@ -16,7 +16,6 @@
     <script>
       (function () {
         var PROVIDER_ORIGIN = 'https://devnotes-oauth-provider.vercel.app';
-        var SELF_ORIGIN = location.origin;
         function log(){ try { console.log.apply(console, arguments); } catch(_) {} }
         function persist(tok){
           if(!tok) return;
@@ -25,41 +24,34 @@
             localStorage.setItem("netlify-cms.user", p);
             localStorage.setItem("decap-cms-user", p);
             localStorage.setItem("decap-cms-auth", p);
-            log('[admin] token saved');
-          } catch(e){ log('[admin] save error', e); }
-        }
-        function rebroadcast(tok){
-          if(!tok) return;
-          var m1 = 'authorization:github:' + JSON.stringify({ token: tok, provider: 'github' });
-          var m2 = 'authorization:github:' + JSON.stringify({ token: tok });
-          var m3 = 'authorization:github:' + tok;
-          var n=0; var iv=setInterval(function(){
-            try { window.postMessage(m1, SELF_ORIGIN); } catch(_) {}
-            try { window.postMessage(m2, SELF_ORIGIN); } catch(_) {}
-            try { window.postMessage(m3, SELF_ORIGIN); } catch(_) {}
-            if(++n>=25) clearInterval(iv);
-          },120);
+            log('[admin] token persisted');
+          } catch(e){ log('[admin] persist error', e); }
         }
         function getStoredToken(){
           var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
           if(!raw) return null;
           try { return JSON.parse(raw).token || raw; } catch { return raw; }
         }
-        // If token already stored (from previous login), rebroadcast so CMS picks it up
-        (function(){ var t = getStoredToken(); if (t){ log('[admin] rebroadcast stored token'); rebroadcast(t); } })();
-
-        // Listen for token from popup and rebroadcast without reloading
+        
+        // Listen ONLY for messages from OAuth provider popup (not self-origin to avoid loops)
         window.addEventListener("message", function (ev) {
-          if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) return;
+          if (ev.origin !== PROVIDER_ORIGIN) return; // only from popup
           var s = String(ev.data || "");
           if (!s.startsWith("authorization:github:")) return;
           var rest = s.replace("authorization:github:", "");
           var tok = rest;
           try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
-          log('[admin] received token from', ev.origin);
+          log('[admin] received token from popup, persisting and reloading');
           persist(tok);
-          rebroadcast(tok);
+          // Hard reload so CMS boots with token already in localStorage
+          location.reload();
         }, false);
+        
+        // If we already have token, log it (CMS should auto-init with it)
+        var existingToken = getStoredToken();
+        if (existingToken) {
+          log('[admin] existing token found, CMS should auto-authenticate');
+        }
       })();
     </script>
 
