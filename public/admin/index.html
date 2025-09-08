@@ -47,30 +47,27 @@
           location.reload();
         }, false);
         
-        // Manual CMS init with existing token
-        window.addEventListener('DOMContentLoaded', function() {
+        // Wait for CMS to load then force authenticate if token exists
+        var checkCMS = setInterval(function() {
           var existingToken = getStoredToken();
-          if (existingToken && window.CMS) {
-            log('[admin] manually initializing CMS with stored token');
+          if (existingToken && window.CMS && window.CMS.getBackend) {
+            log('[admin] forcing CMS authentication with stored token');
+            clearInterval(checkCMS);
             try {
-              window.CMS.init({
-                config: {
-                  backend: {
-                    name: 'github',
-                    repo: 'ConnectTechnologyTeam/devnotes',
-                    branch: 'main',
-                    base_url: 'https://devnotes-oauth-provider.vercel.app',
-                    auth_endpoint: '/api/auth'
-                  }
-                }
-              });
+              // Force backend to use stored token
+              var backend = window.CMS.getBackend();
+              if (backend && backend.authenticate) {
+                backend.authenticate().then(function() {
+                  log('[admin] CMS authenticated successfully');
+                }).catch(function(e) {
+                  log('[admin] CMS auth failed:', e);
+                });
+              }
             } catch(e) {
-              log('[admin] manual init error:', e);
+              log('[admin] force auth error:', e);
             }
-          } else if (existingToken) {
-            log('[admin] token found but CMS not ready, waiting...');
           }
-        });
+        }, 500);
       })();
     </script>
 
