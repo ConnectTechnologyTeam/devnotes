@@ -81,29 +81,24 @@
           try { return JSON.parse(raw).token || raw; } catch { return raw; }
         }
         function initWithToken(tok) {
-          if (!window.CMS || !tok) return;
-          // Read config.yml at runtime is default; we only override backend token
-          const backend = {
-            name: 'github',
-            repo: 'ConnectTechnologyTeam/devnotes',
-            branch: 'main',
-            base_url: 'https://devnotes-oauth-provider.vercel.app',
-            auth_endpoint: '/api/auth',
-            token: tok,
-          };
-          window.CMS.init({ config: { backend } });
-        }
-        function initNormally() {
-          if (!window.CMS) return;
+          // Decap reads token from localStorage; we only need to init
           window.CMS.init();
         }
-        var tok = getToken();
-        if (tok) {
-          // Try init with token; if it fails (no permissions), fall back to normal init
-          try { initWithToken(tok); } catch (e) { initNormally(); }
-        } else {
-          initNormally();
+        function initNormally() {
+          window.CMS.init();
         }
+        function whenCMSReady(cb) {
+          var tries = 0;
+          (function wait(){
+            if (window.CMS && typeof window.CMS.init === 'function') return cb();
+            if (++tries > 100) return; // ~10s max
+            setTimeout(wait, 100);
+          })();
+        }
+        var tok = getToken();
+        whenCMSReady(function(){
+          if (tok) initWithToken(tok); else initNormally();
+        });
       })();
     </script>
   </body>
