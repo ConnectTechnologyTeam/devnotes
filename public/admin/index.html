@@ -1,13 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Content Manager</title>
+
+    <!-- Normalize hash for Decap: fix "/#/access_token=..." -> "#access_token=..." -->
+    <script>
+      (function () {
+        try {
+          var h = window.location.hash || "";
+          // Case 1: "#/access_token=...."  -> "#access_token=...."
+          if (h.indexOf("/access_token=") === 1) {
+            var fixed = "#" + h.slice(2);
+            var url = window.location.pathname + fixed;
+            // replace (no history entry)
+            window.location.replace(url);
+            return; // stop booting until URL fixed
+          }
+          // Case 2 (rare): "#/#access_token=..." -> "#access_token=..."
+          if (h.indexOf("#access_token=") === 1) {
+            var fixed2 = "#" + h.slice(2);
+            window.location.replace(window.location.pathname + fixed2);
+            return;
+          }
+        } catch (e) {
+          // ignore – CMS will still load
+        }
+      })();
+    </script>
+
+    <style>
+      /* Optional: simple centering while CMS loads */
+      html, body { height: 100%; margin: 0; }
+      body { display: grid; place-items: center; font-family: system-ui, sans-serif; background: #f7f7f9; }
+      .boot { color: #556; opacity: .6; font-size: 14px; }
+    </style>
   </head>
   <body>
-    <!-- Include the script that builds the page and powers Decap CMS -->
+    <div class="boot">Loading Content Manager…</div>
+    <!-- Include the script that powers Decap CMS -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </body>
 </html>
-
