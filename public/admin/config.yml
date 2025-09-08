@@ -3,7 +3,6 @@ backend:
   repo: connecttechnologyteam/devnotes
   branch: main
   publish_mode: simple
-  base_url: https://devnotes-oauth.vercel.app
   site_url: https://connecttechnologyteam.github.io/devnotes
 
 # Media storage

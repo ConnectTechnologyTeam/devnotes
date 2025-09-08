@@ -165,14 +165,54 @@ export const mockAuth = {
   },
 };
 
-// Articles are no longer persisted in localStorage. All public content comes from CMS.
-const initializeArticles = () => {};
-const saveArticlesToStorage = () => {};
+// Initialize articles from localStorage
+const initializeArticles = () => {
+  try {
+    const storedArticles = localStorage.getItem('devnotes_articles');
+    if (storedArticles) {
+      const parsedArticles = JSON.parse(storedArticles);
+      // Merge with existing mock articles (keep original ones, add new ones)
+      const existingIds = new Set(mockArticles.map(a => a.id));
+      const newArticles = parsedArticles.filter((a: Article) => !existingIds.has(a.id));
+      mockArticles.push(...newArticles);
+    }
+  } catch (error) {
+    console.error('Error loading articles from localStorage:', error);
+    localStorage.removeItem('devnotes_articles');
+  }
+};
+
+// Initialize articles on module load
+initializeArticles();
+
+// Save articles to localStorage
+const saveArticlesToStorage = () => {
+  try {
+    localStorage.setItem('devnotes_articles', JSON.stringify(mockArticles));
+  } catch (error) {
+    console.error('Error saving articles to localStorage:', error);
+  }
+};
 
 // Mock article management
 export const mockArticleService = {
-  createArticle: async (): Promise<Article> => {
-    throw new Error('Article creation is handled by CMS. Please use /admin to publish.');
+  createArticle: async (articleData: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'author'>): Promise<Article> => {
+    const user = mockAuth.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be logged in to create articles');
+    }
+
+    const newArticle: Article = {
+      id: Date.now().toString(),
+      ...articleData,
+      author: user,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    mockArticles.push(newArticle);
+    saveArticlesToStorage();
+    return newArticle;
   },
 
   updateArticle: async (): Promise<Article> => {
@@ -192,19 +232,19 @@ export const mockArticleService = {
   },
 
   getPublishedArticles: (): Article[] => {
-    return [];
+    return mockArticles.filter(article => article.status === 'PUBLISHED');
   },
 
   getPendingArticles: (): Article[] => {
-    return [];
+    return mockArticles.filter(article => article.status === 'PENDING');
   },
 
   getAllArticles: (): Article[] => {
-    return [];
+    return mockArticles;
   },
 
   // Refresh articles from localStorage (useful after page reload)
   refreshArticles: () => {
-    return [];
+    return mockArticles;
   },
 };

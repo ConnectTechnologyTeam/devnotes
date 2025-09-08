@@ -52,25 +52,90 @@ const CreateArticle = () => {
   };
 
   const handleSaveDraft = async () => {
-    toast({ 
-      title: 'Redirecting to CMS', 
-      description: 'Redirecting to CMS for article creation...' 
-    });
-    // Redirect to CMS after a short delay
-    setTimeout(() => {
-      window.location.href = '/devnotes/admin/';
-    }, 1000);
+    if (!title.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please enter a title for your article.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
+      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
+      
+      await mockArticleService.createArticle({
+        title: title.trim(),
+        summary: summary.trim() || 'No summary provided',
+        content: content.trim() || 'No content provided',
+        status: 'DRAFT',
+        authorId: user!.id,
+        categoryId: categoryId || mockCategories[0].id,
+        category: selectedCategory || mockCategories[0],
+        tags: selectedTagsData,
+      });
+
+      toast({
+        title: "Draft saved",
+        description: "Your article has been saved as a draft.",
+      });
+      navigate('/my-articles');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitForReview = async () => {
-    toast({ 
-      title: 'Redirecting to CMS', 
-      description: 'Redirecting to CMS for article publishing...' 
-    });
-    // Redirect to CMS after a short delay
-    setTimeout(() => {
-      window.location.href = '/devnotes/admin/';
-    }, 1000);
+    if (!title.trim() || !summary.trim() || !content.trim() || !categoryId) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
+      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
+      
+      // Submit for review (admin will approve via CMS)
+      await mockArticleService.createArticle({
+        title: title.trim(),
+        summary: summary.trim(),
+        content: content.trim(),
+        status: 'PENDING',
+        authorId: user!.id,
+        categoryId: categoryId,
+        category: selectedCategory!,
+        tags: selectedTagsData,
+      });
+
+      toast({
+        title: "Article submitted",
+        description: "Your article has been submitted for review. Admin will approve it soon.",
+      });
+      navigate('/my-articles');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit article. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
