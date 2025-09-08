@@ -10,13 +10,11 @@
       (function () {
         var h = window.location.hash || "";
         if (h.indexOf("/access_token=") === 1) {
-          // "#/access_token=..." -> "#access_token=..."
           var fixed = "#" + h.slice(2);
           window.location.replace(window.location.pathname + fixed);
           return;
         }
         if (h.indexOf("#access_token=") === 1) {
-          // "#/#access_token=..." -> "#access_token=..."
           var fixed2 = "#" + h.slice(2);
           window.location.replace(window.location.pathname + fixed2);
           return;
@@ -31,22 +29,18 @@
           if (!tok) return;
           try {
             var payload = JSON.stringify({ token: tok, provider: "github" });
-            // write multiple keys for compatibility across Decap/Netlify CMS versions
             localStorage.setItem("netlify-cms.user", payload);
             localStorage.setItem("decap-cms-user", payload);
             localStorage.setItem("decap-cms-auth", payload);
           } catch (e) {}
         }
 
-        // A) Token via URL hash (fallback path)
         var m = (window.location.hash || "").match(/access_token=([^&]+)/);
         if (m) {
           saveToken(decodeURIComponent(m[1]));
-          // clean URL to "#/" to let CMS boot into app shell
           window.location.replace(window.location.pathname + "#/");
         }
 
-        // B) Token via postMessage from popup
         window.addEventListener(
           "message",
           function (ev) {
@@ -75,5 +69,26 @@
     <div class="boot">Loading Content Manager…</div>
     <!-- 3) Load Decap AFTER the bridge -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+
+    <!-- 4) After Decap loads, rebroadcast stored token to ensure CMS receives it -->
+    <script>
+      (function reBroadcastStoredToken() {
+        try {
+          var stored = localStorage.getItem("decap-cms-user") || localStorage.getItem("netlify-cms.user") || localStorage.getItem("decap-cms-auth");
+          if (!stored) return;
+          var token = stored;
+          try { token = JSON.parse(stored).token || stored; } catch(_) {}
+          var m1 = 'authorization:github:' + JSON.stringify({ token: token, provider: 'github' });
+          var m2 = 'authorization:github:' + JSON.stringify({ token: token });
+          var m3 = 'authorization:github:' + token;
+          var n = 0; var iv = setInterval(function(){
+            try { window.postMessage(m1, '*'); } catch(_) {}
+            try { window.postMessage(m2, '*'); } catch(_) {}
+            try { window.postMessage(m3, '*'); } catch(_) {}
+            if (++n >= 25) clearInterval(iv);
+          }, 120);
+        } catch (e) {}
+      })();
+    </script>
   </body>
 </html>
