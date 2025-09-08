@@ -31,7 +31,7 @@
         var m = (location.hash || "").match(/access_token=([^&]+)/);
         if (m) {
           save(decodeURIComponent(m[1]));
-          return location.replace(location.pathname + "#/");
+          return location.reload(); // ensure Decap boots with token present
         }
         window.addEventListener("message", function (ev) {
           if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) {
@@ -44,7 +44,7 @@
           try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
           log('[admin] received token from', ev.origin);
           save(tok);
-          location.replace(location.pathname + "#/");
+          location.reload(); // reload instead of just hash change
         }, false);
       })();
     </script>
