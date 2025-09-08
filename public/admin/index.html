@@ -9,7 +9,7 @@
       (function () {
         var h = location.hash || "";
         if (h.indexOf("/access_token=") === 1) return location.replace(location.pathname + "#" + h.slice(2));
-        if (h.indexOf("#access_token=") === 1) return location.replace(location.pathname + "#" + h.slice(2));
+        if (h.indexOf("#access_token=") === 1) return; // let CMS handle legacy format
       })();
     </script>
 
@@ -27,11 +27,15 @@
             localStorage.setItem("decap-cms-auth", p);
             log('[admin] token saved');
           } catch(e){ log('[admin] save error', e); }
+          // Set legacy hash so Decap's internal auth handler can pick it up
+          try {
+            location.replace(location.pathname + '#access_token=' + encodeURIComponent(tok));
+          } catch(_) { location.reload(); }
         }
         var m = (location.hash || "").match(/access_token=([^&]+)/);
         if (m) {
-          save(decodeURIComponent(m[1]));
-          return location.reload(); // ensure Decap boots with token present
+          // token present in hash already -> just proceed
+          log('[admin] legacy hash token detected');
         }
         window.addEventListener("message", function (ev) {
           if (ev.origin !== PROVIDER_ORIGIN && ev.origin !== SELF_ORIGIN) {
@@ -44,7 +48,6 @@
           try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
           log('[admin] received token from', ev.origin);
           save(tok);
-          location.reload(); // reload instead of just hash change
         }, false);
       })();
     </script>
