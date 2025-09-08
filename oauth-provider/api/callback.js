@@ -1,125 +1,61 @@
-// Vercel Serverless: /api/callback
-// Exchanges ?code=... for access_token, then redirects back to /admin#access_token=...
-
+// /api/callback — exchange code -> token, deliver via postMessage (robust)
 async function exchangeCodeForToken(code, clientId, clientSecret) {
-  const resp = await fetch("https://github.com/login/oauth/access_token", {
+  const r = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "User-Agent": "decap-oauth-provider",
-    },
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
     body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
   });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Token exchange failed: ${resp.status} ${text}`);
-  }
-  const data = await resp.json();
-  if (!data.access_token) {
-    throw new Error(`No access_token in response: ${JSON.stringify(data)}`);
-  }
+  if (!r.ok) throw new Error(`Token exchange failed: ${r.status}`);
+  const data = await r.json();
+  if (!data.access_token) throw new Error(`No access_token: ${JSON.stringify(data)}`);
   return data.access_token;
-}
-
-async function fetchGithubUser(token) {
-  const r = await fetch("https://api.github.com/user", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "User-Agent": "decap-oauth-provider",
-      "Accept": "application/vnd.github+json",
-    },
-  });
-  if (!r.ok) throw new Error(`GitHub /user failed: ${r.status}`);
-  return r.json();
-}
-
-async function upsertLoginAudit(user, nowISO) {
-  const owner = process.env.REPO_OWNER;
-  const repo  = process.env.REPO_NAME;
-  const path  = "data/user-logins.json";
-  const token = process.env.REPO_ACCESS_TOKEN; // fine-grained PAT (content:write on repo)
-
-  if (!owner || !repo || !token) return; // audit is optional
-
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    "User-Agent": "decap-oauth-audit",
-    Accept: "application/vnd.github+json",
-  };
-
-  // read existing
-  let sha = null;
-  let current = {};
-  const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, { headers });
-  if (getRes.status === 200) {
-    const file = await getRes.json();
-    sha = file.sha;
-    const content = Buffer.from(file.content || "", "base64").toString("utf8");
-    try { current = JSON.parse(content || "{}"); } catch { current = {}; }
-  } else if (getRes.status !== 404) {
-    // other errors ignore
-    return;
-  }
-
-  const login = user.login;
-  const prev = current[login] || { loginCount: 0 };
-  current[login] = {
-    name: user.name || prev.name || login,
-    avatarUrl: user.avatar_url || prev.avatarUrl || "",
-    loginCount: (prev.loginCount || 0) + 1,
-    lastLogin: nowISO,
-  };
-
-  const newContent = Buffer.from(JSON.stringify(current, null, 2), "utf8").toString("base64");
-
-  await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
-    method: "PUT",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: `chore(cms): update login for ${login}`,
-      content: newContent,
-      sha,
-    }),
-  });
 }
 
 export default async function handler(req, res) {
   try {
     const code = req.query.code;
-    const clientId = process.env.OAUTH_CLIENT_ID;
-    const clientSecret = process.env.OAUTH_CLIENT_SECRET;
-    const redirectUrl = process.env.REDIRECT_URL || "/admin/"; // where CMS lives
+    if (!code) return res.status(400).send("Missing code");
 
-    if (!code) return res.status(400).json({ error: "Missing code" });
-    if (!clientId || !clientSecret) {
-      return res.status(500).json({ error: "Missing OAUTH_CLIENT_ID/SECRET" });
-    }
+    const id = process.env.OAUTH_CLIENT_ID;
+    const secret = process.env.OAUTH_CLIENT_SECRET;
+    if (!id || !secret) return res.status(500).send("Missing OAUTH envs");
 
-    // 1) exchange code -> token
-    const accessToken = await exchangeCodeForToken(code, clientId, clientSecret);
+    const token = await exchangeCodeForToken(code, id, secret);
 
-    // 2) (optional) audit login -> update repo JSON
-    try {
-      const user = await fetchGithubUser(accessToken);
-      const now = new Date().toISOString();
-      await upsertLoginAudit(user, now);
-    } catch (auditErr) {
-      // don't block login if audit fails
-      console.warn("Audit skipped:", auditErr?.message || auditErr);
-    }
+    // Admin URL (no '#', no trailing slash)
+    let adminUrl = process.env.REDIRECT_URL || "https://connecttechnologyteam.github.io/devnotes/admin";
+    adminUrl = adminUrl.replace(/[#?].*$/, "").replace(/\/+$/, "");
 
-    // 3) redirect back to CMS with token in hash (Decap CMS expects this)
-    res.writeHead(302, {
-      Location: `${redirectUrl}#access_token=${accessToken}&token_type=bearer`,
-    });
-    res.end();
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"/></head><body>
+<script>
+(function () {
+  var token = ${JSON.stringify(token)};
+  // Decap/Netlify CMS legacy & new formats
+  var m1 = 'authorization:github:' + JSON.stringify({ token: token, provider: 'github' });
+  var m2 = 'authorization:github:' + JSON.stringify({ token: token });
+  var m3 = 'authorization:github:' + token;
+
+  function sendAll(){
+    try { window.opener && window.opener.postMessage(m1, '*'); } catch(_) {}
+    try { window.opener && window.opener.postMessage(m2, '*'); } catch(_) {}
+    try { window.opener && window.opener.postMessage(m3, '*'); } catch(_) {}
+  }
+
+  // fire immediately & retry ~3s to avoid race with CMS boot
+  sendAll();
+  var n = 0, iv = setInterval(function(){ sendAll(); if(++n>=25) clearInterval(iv); }, 120);
+
+  // close popup; fallback navigate popup back to admin (no hash) if close is blocked
+  try { window.close(); } catch(_) {}
+  setTimeout(function(){ location.replace(${JSON.stringify(adminUrl)}); }, 2000);
+})();
+</script>
+</body></html>`;
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(200).end(html);
   } catch (e) {
     console.error("callback error:", e);
-    // Fallback: show minimal error page
-    return res
-      .status(500)
-      .setHeader("Content-Type", "text/html; charset=utf-8")
-      .end(`<h1>OAuth Error</h1><pre>${String(e?.message || e)}</pre>`);
+    res.status(500).send("OAuth callback failed");
   }
 }
