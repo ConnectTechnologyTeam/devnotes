@@ -1,62 +1,59 @@
 backend:
   name: github
-  repo: connecttechnologyteam/devnotes
+  repo: ConnectTechnologyTeam/devnotes   # chuẩn tên org/repo
   branch: main
-  publish_mode: editorial_workflow
   base_url: https://devnotes-oauth-provider.vercel.app
   auth_endpoint: /api/auth
-  site_url: https://connecttechnologyteam.github.io/devnotes
+
+# top-level (KHÔNG lùi vào backend)
+site_url: https://connecttechnologyteam.github.io/devnotes
 
 # Media storage
 media_folder: "public/uploads"
-public_folder: "/devnotes/uploads"
+public_folder: "/devnotes/uploads"   # Project Pages -> /<repo>/uploads
 
-# Collections
+# Publish mode
+# - simple: commit thẳng vào main (public ngay)
+# - editorial_workflow: tạo PR chờ approve/merge mới public
+publish_mode: editorial_workflow
+
+# Collections (ví dụ đầy đủ, bỏ hẳn dấu ... đi)
 collections:
-  # Users collection
   - name: "users"
     label: "Users"
     folder: "content/users"
     create: true
     slug: "{{slug}}"
     fields:
-      - { name: github, label: "GitHub Login", widget: "string" }
-      - { name: name,   label: "Full Name",    widget: "string", required: false }
-      - { name: avatar, label: "Avatar",       widget: "image",  required: false }
-      - { name: bio,    label: "Bio",          widget: "text",   required: false }
-      - { name: role,   label: "Role",         widget: "select", options: ["author","editor","admin"], default: "author" }
-  # Posts collection
+      - { name: github, label: "GitHub Login", widget: string }
+      - { name: name, label: "Full Name", widget: string, required: false }
+      - { name: avatar, label: "Avatar", widget: image, required: false }
+      - { name: bio, label: "Bio", widget: text, required: false }
+      - { name: role, label: "Role", widget: select, options: ["admin","author"], default: "author" }
+
   - name: "posts"
     label: "Posts"
     folder: "content/posts"
     create: true
     slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    preview_path: "articles/{{slug}}"   # nếu route là /#/articles/:slug
     fields:
       - { name: title, label: Title }
       - { name: date, label: Date, widget: datetime }
-      - label: Author (slug from users)
-        name: author
-        widget: relation
-        collection: "users"
-        value_field: "{{slug}}"
-        search_fields: ["name","github"]
-        display_fields: ["name","github"]
-      - { name: role, label: "Author Role", widget: "select", options: ["admin","author"], required: false }
+      - { name: author, label: Author, widget: relation, collection: users, value_field: "{{slug}}", search_fields: ["name","github"], display_fields: ["name","github"] }
       - { name: description, label: Summary, widget: text, required: false }
+      - { name: categories, label: Categories, widget: select, multiple: true, options: ["Java","Spring","Microservices","Architecture"] }
       - { name: tags, label: Tags, widget: list, required: false }
-      - { name: featured_image, label: Featured Image, widget: image, required: false }
-      - { name: body, label: Body, widget: markdown }
       - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: body, label: Body, widget: markdown }
 
-  # Pages collection
   - name: "pages"
     label: "Pages"
     folder: "content/pages"
     create: true
     slug: "{{slug}}"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
-      - {label: "Description", name: "description", widget: "text", required: false}
-      - {label: "Body", name: "body", widget: "markdown"}
-      - {label: "Draft", name: "draft", widget: "boolean", default: false}
-
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: text, required: false }
+      - { name: body, label: Body, widget: markdown }
+      - { name: draft, label: Draft, widget: boolean, default: false }
