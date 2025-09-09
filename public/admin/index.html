@@ -47,27 +47,16 @@
           location.reload();
         }, false);
         
-        // Wait for CMS to load then force authenticate if token exists
-        var checkCMS = setInterval(function() {
-          var existingToken = getStoredToken();
-          if (existingToken && window.CMS && window.CMS.getBackend) {
-            log('[admin] forcing CMS authentication with stored token');
-            clearInterval(checkCMS);
-            try {
-              // Force backend to use stored token
-              var backend = window.CMS.getBackend();
-              if (backend && backend.authenticate) {
-                backend.authenticate().then(function() {
-                  log('[admin] CMS authenticated successfully');
-                }).catch(function(e) {
-                  log('[admin] CMS auth failed:', e);
-                });
-              }
-            } catch(e) {
-              log('[admin] force auth error:', e);
-            }
-          }
-        }, 500);
+        // Simple approach: if token exists, redirect to dashboard immediately
+        var existingToken = getStoredToken();
+        if (existingToken) {
+          log('[admin] Token found, redirecting to dashboard immediately');
+          // Redirect to dashboard/collections
+          setTimeout(function() {
+            window.location.hash = '#/collections/posts';
+            log('[admin] Redirected to collections');
+          }, 1000);
+        }
       })();
     </script>
 
@@ -95,84 +84,19 @@
           
           console.log('[admin] Manual CMS init, token exists:', !!existingToken);
           
-          if (existingToken) {
-            // Init with pre-authenticated state (no OAuth endpoint)
-            window.CMS.init({
-              config: {
-                backend: {
-                  name: 'github',
-                  repo: 'ConnectTechnologyTeam/devnotes',
-                  branch: 'main'
-                }
-                // Let CMS load config.yml for collections
+          // Always init with OAuth endpoint, let CMS handle auth
+          window.CMS.init({
+            config: {
+              backend: {
+                name: 'github',
+                repo: 'ConnectTechnologyTeam/devnotes',
+                branch: 'main',
+                base_url: 'https://devnotes-oauth-provider.vercel.app',
+                auth_endpoint: '/api/auth'
               }
-            });
-            
-            // Force set user after init
-            setTimeout(function() {
-              try {
-                var backend = window.CMS.getBackend();
-                if (backend) {
-                  // Override multiple auth methods
-                  backend.currentUser = function() {
-                    return Promise.resolve({ 
-                      login: 'authenticated-user',
-                      name: 'Authenticated User',
-                      token: existingToken 
-                    });
-                  };
-                  
-                  // Force set token in backend
-                  if (backend.api) {
-                    backend.api.accessToken = existingToken;
-                  }
-                  
-                  // Override authenticate to return success immediately
-                  var originalAuth = backend.authenticate;
-                  backend.authenticate = function() {
-                    console.log('[admin] Override authenticate - returning success');
-                    return Promise.resolve();
-                  };
-                  
-                  // Force trigger auth state change
-                  if (backend.authComponent && backend.authComponent.handleLogin) {
-                    backend.authComponent.handleLogin({ token: existingToken });
-                  }
-                  
-                  console.log('[admin] Forced backend authentication with token');
-                  
-                  // Force redirect to collections after auth
-                  setTimeout(function() {
-                    console.log('[admin] Force redirecting to collections');
-                    window.location.hash = '#/collections/posts';
-                    // Force reload if still on login
-                    setTimeout(function() {
-                      if (window.location.hash === '#/' || window.location.hash === '#') {
-                        console.log('[admin] Still on login, force reloading');
-                        window.location.reload();
-                      }
-                    }, 2000);
-                  }, 500);
-                }
-              } catch(e) {
-                console.error('[admin] Force auth error:', e);
-              }
-            }, 1000);
-          } else {
-            // Init normally for login (with OAuth endpoint)
-            window.CMS.init({
-              config: {
-                backend: {
-                  name: 'github',
-                  repo: 'ConnectTechnologyTeam/devnotes',
-                  branch: 'main',
-                  base_url: 'https://devnotes-oauth-provider.vercel.app',
-                  auth_endpoint: '/api/auth'
-                }
-                // Let CMS load config.yml for collections
-              }
-            });
-          }
+              // Let CMS load config.yml for collections
+            }
+          });
         }
         
         if (window.CMS) {
