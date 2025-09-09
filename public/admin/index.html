@@ -7,158 +7,71 @@
 
     <script>
       (function () {
-        var h = location.hash || "";
-        if (h.indexOf("/access_token=") === 1) return location.replace(location.pathname + "#" + h.slice(2));
-        if (h.indexOf("#access_token=") === 1) return; // let CMS handle legacy format
-      })();
-    </script>
-
-    <script>
-      (function () {
-        var PROVIDER_ORIGIN = 'https://devnotes-oauth-provider.vercel.app';
-        function log(){ try { console.log.apply(console, arguments); } catch(_) {} }
-        function persist(tok){
-          if(!tok) return;
-          // Set token in multiple formats for Decap CMS compatibility
-          var userObj = { token: tok, provider: "github", login: "authenticated-user", name: "Authenticated User" };
-          var authObj = { token: tok, provider: "github" };
-          
+        // --- helpers ---
+        function persistToken(tok) {
+          if (!tok) return;
+          var payload = JSON.stringify({ token: tok, provider: "github" });
           try {
-            // Netlify CMS format
-            localStorage.setItem("netlify-cms.user", JSON.stringify(userObj));
-            localStorage.setItem("netlify-cms.auth", JSON.stringify(authObj));
-            
-            // Decap CMS format
-            localStorage.setItem("decap-cms-user", JSON.stringify(userObj));
-            localStorage.setItem("decap-cms-auth", JSON.stringify(authObj));
-            
-            // GitHub backend format
-            localStorage.setItem("github-backend-user", JSON.stringify(userObj));
-            localStorage.setItem("github-backend-auth", JSON.stringify(authObj));
-            
-            log('[admin] token persisted in multiple formats');
-          } catch(e){ log('[admin] persist error', e); }
+            // Các key phổ biến mà Decap/Netlify CMS từng dùng
+            localStorage.setItem("netlify-cms.user", payload);
+            localStorage.setItem("decap-cms-user", payload);
+            localStorage.setItem("decap-cms-auth", payload);
+          } catch (e) {}
         }
-        function getStoredToken(){
-          var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
-          if(!raw) return null;
-          try { return JSON.parse(raw).token || raw; } catch { return raw; }
+        function gotoRoot() {
+          // Quay về shell của CMS (#/) để dashboard render
+          location.replace(location.pathname + "#/");
         }
-        
-        // Listen ONLY for messages from OAuth provider popup (not self-origin to avoid loops)
-        window.addEventListener("message", function (ev) {
-          if (ev.origin !== PROVIDER_ORIGIN) return; // only from popup
-          var s = String(ev.data || "");
-          if (!s.startsWith("authorization:github:")) return;
-          var rest = s.replace("authorization:github:", "");
-          var tok = rest;
-          try { if (rest.startsWith("{")) tok = JSON.parse(rest).token; } catch(e){ log('[admin] parse error', e); }
-          log('[admin] received token from popup, persisting and reloading');
-          persist(tok);
-          // Hard reload so CMS boots with token already in localStorage
-          location.reload();
-        }, false);
-        
-        // Simple approach: if token exists, redirect to dashboard immediately (only once)
-        var existingToken = getStoredToken();
-        if (existingToken && !sessionStorage.getItem('cms-redirect-attempted')) {
-          log('[admin] Token found, redirecting to dashboard immediately');
-          sessionStorage.setItem('cms-redirect-attempted', 'true');
-          
-          // Redirect to CMS collections (Decap CMS uses #/collections/posts)
-          setTimeout(function() {
-            window.location.hash = '#/collections/posts';
-            log('[admin] Redirected to CMS collections');
-          }, 1000);
-        } else if (existingToken) {
-          log('[admin] Token exists but redirect already attempted, letting CMS handle auth');
+
+        // --- 1) Chuẩn hoá hash & bắt token qua URL ---
+        var h = location.hash || "";
+        // Fix trường hợp "#/access_token=..." => "#access_token=..."
+        if (h.indexOf("/access_token=") === 1) {
+          location.replace(location.pathname + "#" + h.slice(2));
+          return;
         }
+        // Nếu đã có token trong hash thì lưu & quay về "#/"
+        var m = h.match(/access_token=([^&]+)/);
+        if (m) {
+          persistToken(decodeURIComponent(m[1]));
+          gotoRoot();
+          return;
+        }
+
+        // --- 2) Nhận token qua postMessage từ popup callback ---
+        // Chấp nhận cả alias production và preview domain của Vercel cho project này
+        var allowProviderOrigin = function (origin) {
+          return /^https:\/\/devnotes-oauth-provider(-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
+        };
+
+        window.addEventListener(
+          "message",
+          function (ev) {
+            try {
+              if (!allowProviderOrigin(ev.origin)) return; // chỉ nhận từ OAuth provider
+              var s = String(ev.data || "");
+              if (!s.startsWith("authorization:github:")) return;
+              var rest = s.slice("authorization:github:".length);
+              var tok = rest;
+              if (rest[0] === "{") tok = JSON.parse(rest).token;
+              persistToken(tok);
+              gotoRoot();
+            } catch (e) {}
+          },
+          false
+        );
       })();
     </script>
 
     <style>
-      html,body{height:100%;margin:0}
-      body{display:grid;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f7f7f9}
-      .boot{color:#667;opacity:.75;font-size:12px;position:fixed;top:8px;left:50%;transform:translateX(-50%)}
+      html, body { height: 100%; margin: 0; }
+      body { display: grid; place-items: center; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f7f7f9; }
+      .boot { color: #667; opacity: .75; font-size: 12px; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); }
     </style>
   </head>
   <body>
     <div class="boot">Loading Content Manager…</div>
-    <script>
-      window.CMS_MANUAL_INIT = true; // Disable auto-init
-    </script>
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
-    <script>
-      // Manual init after CMS loads
-      (function() {
-        function initCMS() {
-          var existingToken = (function(){
-            var raw = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms.user') || localStorage.getItem('decap-cms-auth');
-            if(!raw) return null;
-            try { return JSON.parse(raw).token || raw; } catch { return raw; }
-          })();
-          
-          console.log('[admin] Manual CMS init, token exists:', !!existingToken);
-          
-          // Always init with OAuth endpoint, let CMS handle auth
-          window.CMS.init({
-            config: {
-              backend: {
-                name: 'github',
-                repo: 'ConnectTechnologyTeam/devnotes',
-                branch: 'main',
-                base_url: 'https://devnotes-oauth-provider.vercel.app',
-                auth_endpoint: '/api/auth'
-              }
-              // Let CMS load config.yml for collections
-            }
-          });
-          
-          // If token exists, force set it after CMS init
-          if (existingToken) {
-            setTimeout(function() {
-              try {
-                var backend = window.CMS.getBackend();
-                if (backend) {
-                  // Force set token in backend
-                  backend.api = backend.api || {};
-                  backend.api.accessToken = existingToken;
-                  
-                  // Override currentUser to return authenticated user
-                  backend.currentUser = function() {
-                    return Promise.resolve({
-                      login: 'authenticated-user',
-                      name: 'Authenticated User',
-                      token: existingToken
-                    });
-                  };
-                  
-                  // Force authenticate
-                  backend.authenticate = function() {
-                    console.log('[admin] Force authenticate with token');
-                    return Promise.resolve();
-                  };
-                  
-                  console.log('[admin] Force set token in backend');
-                  
-                  // Try to trigger auth state change
-                  if (window.CMS.authComponent) {
-                    window.CMS.authComponent.setState({ user: { login: 'authenticated-user' } });
-                  }
-                }
-              } catch(e) {
-                console.error('[admin] Force auth error:', e);
-              }
-            }, 2000);
-          }
-        }
-        
-        if (window.CMS) {
-          initCMS();
-        } else {
-          window.addEventListener('load', initCMS);
-        }
-      })();
-    </script>
+    <!-- KHÔNG manual init; để Decap tự đọc config.yml -->
+    <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
   </body>
 </html>
