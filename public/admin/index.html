@@ -113,6 +113,7 @@
               try {
                 var backend = window.CMS.getBackend();
                 if (backend) {
+                  // Override multiple auth methods
                   backend.currentUser = function() {
                     return Promise.resolve({ 
                       login: 'authenticated-user',
@@ -120,7 +121,25 @@
                       token: existingToken 
                     });
                   };
-                  console.log('[admin] Forced backend authentication');
+                  
+                  // Force set token in backend
+                  if (backend.api) {
+                    backend.api.accessToken = existingToken;
+                  }
+                  
+                  // Override authenticate to return success immediately
+                  var originalAuth = backend.authenticate;
+                  backend.authenticate = function() {
+                    console.log('[admin] Override authenticate - returning success');
+                    return Promise.resolve();
+                  };
+                  
+                  // Force trigger auth state change
+                  if (backend.authComponent && backend.authComponent.handleLogin) {
+                    backend.authComponent.handleLogin({ token: existingToken });
+                  }
+                  
+                  console.log('[admin] Forced backend authentication with token');
                 }
               } catch(e) {
                 console.error('[admin] Force auth error:', e);
