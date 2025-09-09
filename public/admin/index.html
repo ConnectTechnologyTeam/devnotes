@@ -59,29 +59,19 @@
           location.reload();
         }, false);
         
-        // Simple approach: if token exists, redirect to dashboard immediately
+        // Simple approach: if token exists, redirect to dashboard immediately (only once)
         var existingToken = getStoredToken();
-        if (existingToken) {
+        if (existingToken && !sessionStorage.getItem('cms-redirect-attempted')) {
           log('[admin] Token found, redirecting to dashboard immediately');
+          sessionStorage.setItem('cms-redirect-attempted', 'true');
+          
           // Redirect to CMS collections (Decap CMS uses #/collections/posts)
           setTimeout(function() {
             window.location.hash = '#/collections/posts';
             log('[admin] Redirected to CMS collections');
-            
-            // If still on login after redirect, force reload
-            setTimeout(function() {
-              var loginButton = document.querySelector('button[data-testid="login-button"]') || 
-                               document.querySelector('button[class*="login"]') ||
-                               document.querySelector('button');
-              var hasLoginText = loginButton && loginButton.textContent && 
-                                loginButton.textContent.includes('Login with GitHub');
-              
-              if (loginButton || hasLoginText || window.location.hash === '#/') {
-                log('[admin] Still on login, force reloading with token');
-                window.location.reload();
-              }
-            }, 2000);
           }, 1000);
+        } else if (existingToken) {
+          log('[admin] Token exists but redirect already attempted, letting CMS handle auth');
         }
       })();
     </script>
