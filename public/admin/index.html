@@ -19,12 +19,24 @@
         function log(){ try { console.log.apply(console, arguments); } catch(_) {} }
         function persist(tok){
           if(!tok) return;
-          var p = JSON.stringify({ token: tok, provider: "github" });
+          // Set token in multiple formats for Decap CMS compatibility
+          var userObj = { token: tok, provider: "github", login: "authenticated-user", name: "Authenticated User" };
+          var authObj = { token: tok, provider: "github" };
+          
           try {
-            localStorage.setItem("netlify-cms.user", p);
-            localStorage.setItem("decap-cms-user", p);
-            localStorage.setItem("decap-cms-auth", p);
-            log('[admin] token persisted');
+            // Netlify CMS format
+            localStorage.setItem("netlify-cms.user", JSON.stringify(userObj));
+            localStorage.setItem("netlify-cms.auth", JSON.stringify(authObj));
+            
+            // Decap CMS format
+            localStorage.setItem("decap-cms-user", JSON.stringify(userObj));
+            localStorage.setItem("decap-cms-auth", JSON.stringify(authObj));
+            
+            // GitHub backend format
+            localStorage.setItem("github-backend-user", JSON.stringify(userObj));
+            localStorage.setItem("github-backend-auth", JSON.stringify(authObj));
+            
+            log('[admin] token persisted in multiple formats');
           } catch(e){ log('[admin] persist error', e); }
         }
         function getStoredToken(){
@@ -55,6 +67,16 @@
           setTimeout(function() {
             window.location.hash = '#/collections/posts';
             log('[admin] Redirected to CMS collections');
+            
+            // If still on login after redirect, force reload
+            setTimeout(function() {
+              if (document.querySelector('button[data-testid="login-button"]') || 
+                  document.querySelector('button:contains("Login with GitHub")') ||
+                  window.location.hash === '#/') {
+                log('[admin] Still on login, force reloading with token');
+                window.location.reload();
+              }
+            }, 2000);
           }, 1000);
         }
       })();
