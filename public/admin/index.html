@@ -51,10 +51,10 @@
         var existingToken = getStoredToken();
         if (existingToken) {
           log('[admin] Token found, redirecting to dashboard immediately');
-          // Redirect to dashboard/collections
+          // Redirect to CMS collections (Decap CMS uses #/collections/posts)
           setTimeout(function() {
             window.location.hash = '#/collections/posts';
-            log('[admin] Redirected to collections');
+            log('[admin] Redirected to CMS collections');
           }, 1000);
         }
       })();
