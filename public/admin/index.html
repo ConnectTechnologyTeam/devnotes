@@ -140,6 +140,19 @@
                   }
                   
                   console.log('[admin] Forced backend authentication with token');
+                  
+                  // Force redirect to collections after auth
+                  setTimeout(function() {
+                    console.log('[admin] Force redirecting to collections');
+                    window.location.hash = '#/collections/posts';
+                    // Force reload if still on login
+                    setTimeout(function() {
+                      if (window.location.hash === '#/' || window.location.hash === '#') {
+                        console.log('[admin] Still on login, force reloading');
+                        window.location.reload();
+                      }
+                    }, 2000);
+                  }, 500);
                 }
               } catch(e) {
                 console.error('[admin] Force auth error:', e);
