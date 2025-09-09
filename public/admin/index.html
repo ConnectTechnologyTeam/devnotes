@@ -113,6 +113,44 @@
               // Let CMS load config.yml for collections
             }
           });
+          
+          // If token exists, force set it after CMS init
+          if (existingToken) {
+            setTimeout(function() {
+              try {
+                var backend = window.CMS.getBackend();
+                if (backend) {
+                  // Force set token in backend
+                  backend.api = backend.api || {};
+                  backend.api.accessToken = existingToken;
+                  
+                  // Override currentUser to return authenticated user
+                  backend.currentUser = function() {
+                    return Promise.resolve({
+                      login: 'authenticated-user',
+                      name: 'Authenticated User',
+                      token: existingToken
+                    });
+                  };
+                  
+                  // Force authenticate
+                  backend.authenticate = function() {
+                    console.log('[admin] Force authenticate with token');
+                    return Promise.resolve();
+                  };
+                  
+                  console.log('[admin] Force set token in backend');
+                  
+                  // Try to trigger auth state change
+                  if (window.CMS.authComponent) {
+                    window.CMS.authComponent.setState({ user: { login: 'authenticated-user' } });
+                  }
+                }
+              } catch(e) {
+                console.error('[admin] Force auth error:', e);
+              }
+            }, 2000);
+          }
         }
         
         if (window.CMS) {
