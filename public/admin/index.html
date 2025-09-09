@@ -96,35 +96,15 @@
           console.log('[admin] Manual CMS init, token exists:', !!existingToken);
           
           if (existingToken) {
-            // Init with pre-authenticated state
+            // Init with pre-authenticated state (no OAuth endpoint)
             window.CMS.init({
               config: {
                 backend: {
                   name: 'github',
                   repo: 'ConnectTechnologyTeam/devnotes',
                   branch: 'main'
-                },
-                media_folder: 'public/uploads',
-                public_folder: '/devnotes/uploads',
-                publish_mode: 'editorial_workflow',
-                collections: [
-                  {
-                    name: 'posts',
-                    label: 'Posts',
-                    folder: 'content/posts',
-                    create: true,
-                    slug: '{{year}}-{{month}}-{{day}}-{{slug}}',
-                    fields: [
-                      { name: 'title', label: 'Title' },
-                      { name: 'date', label: 'Date', widget: 'datetime' },
-                      { name: 'author', label: 'Author' },
-                      { name: 'description', label: 'Summary', widget: 'text', required: false },
-                      { name: 'tags', label: 'Tags', widget: 'list', required: false },
-                      { name: 'draft', label: 'Draft', widget: 'boolean', default: false },
-                      { name: 'body', label: 'Body', widget: 'markdown' }
-                    ]
-                  }
-                ]
+                }
+                // Let CMS load config.yml for collections
               }
             });
             
@@ -147,7 +127,7 @@
               }
             }, 1000);
           } else {
-            // Init normally for login
+            // Init normally for login (with OAuth endpoint)
             window.CMS.init({
               config: {
                 backend: {
@@ -157,6 +137,7 @@
                   base_url: 'https://devnotes-oauth-provider.vercel.app',
                   auth_endpoint: '/api/auth'
                 }
+                // Let CMS load config.yml for collections
               }
             });
           }
