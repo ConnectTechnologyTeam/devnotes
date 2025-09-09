@@ -70,9 +70,13 @@
             
             // If still on login after redirect, force reload
             setTimeout(function() {
-              if (document.querySelector('button[data-testid="login-button"]') || 
-                  document.querySelector('button:contains("Login with GitHub")') ||
-                  window.location.hash === '#/') {
+              var loginButton = document.querySelector('button[data-testid="login-button"]') || 
+                               document.querySelector('button[class*="login"]') ||
+                               document.querySelector('button');
+              var hasLoginText = loginButton && loginButton.textContent && 
+                                loginButton.textContent.includes('Login with GitHub');
+              
+              if (loginButton || hasLoginText || window.location.hash === '#/') {
                 log('[admin] Still on login, force reloading with token');
                 window.location.reload();
               }
