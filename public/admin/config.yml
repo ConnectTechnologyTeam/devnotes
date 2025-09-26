@@ -1,11 +1,8 @@
 publish_mode: editorial_workflow
 
 backend:
-  # choose one you actually use
-  name: git-gateway # (Netlify Identity + Git Gateway)
-  # or
-  # name: github
-  # repo: your-user/your-repo
+  name: github
+  repo: connecttechnologyteam/devnotes
   branch: duc-develop
 
 collections:
