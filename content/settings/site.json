@@ -1,0 +1,10 @@
+{
+  "title": "Hello World React TypeScript",
+  "description": "A modern React TypeScript application with DecapCMS integration",
+  "logo": "/images/logo.png",
+  "social": {
+    "twitter": "",
+    "github": "",
+    "linkedin": ""
+  }
+}

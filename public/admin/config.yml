@@ -1,89 +1,71 @@
 backend:
-  name: github
-  repo: ConnectTechnologyTeam/devnotes
-  branch: duc-develop
-  base_url: https://devnotes-oauth-provider.vercel.app # your OAuth handler base
-  auth_endpoint: /api/auth
+  name: git-gateway
+  branch: main # Branch to update (optional; defaults to master)
 
-# Your live site URL on Netlify (so previews/links resolve correctly)
-site_url: https://symphonious-selkie-b4acc2.netlify.app
+# Uncomment below to enable drafts
+# publish_mode: editorial_workflow
 
-# Media storage: files saved in repo under public/uploads,
-# and served at https://<site>/uploads/<file>
-media_folder: "public/uploads"
-public_folder: "/uploads"
-
-# Create PRs instead of committing straight to main
-publish_mode: editorial_workflow
+media_folder: "public/images" # Media files will be stored in the repo under public/images
+public_folder: "/images" # The src attribute for uploaded media will begin with /images
 
 collections:
-  - name: "users"
-    label: "Users"
-    folder: "content/users"
-    create: true
-    slug: "{{slug}}"
-    fields:
-      - { name: "github", label: "GitHub Login", widget: "string" }
-      - { name: "name", label: "Full Name", widget: "string", required: false }
-      - { name: "avatar", label: "Avatar", widget: "image", required: false }
-      - { name: "bio", label: "Bio", widget: "text", required: false }
-      - {
-          name: "role",
-          label: "Role",
-          widget: "select",
-          options: ["admin", "author"],
-          default: "author",
-        }
+  - name: "pages" # Used in routes, e.g., /admin/collections/pages
+    label: "Pages" # Used in the UI
+    folder: "content/pages" # The path to the folder where the documents are stored
+    create: true # Allow users to create new documents in this collection
+    slug: "{{slug}}" # Filename template, e.g., YYYY-MM-DD-title.md
+    fields: # The fields for each document, usually in front matter
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Publish Date", name: "date", widget: "datetime" }
+      - { label: "Featured Image", name: "image", widget: "image" }
+      - { label: "Body", name: "body", widget: "markdown" }
 
-  - name: "posts"
-    label: "Posts"
-    folder: "content/posts"
-    create: true
-    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
-    # If your app routes like /articles/:slug (React Router), keep this:
-    preview_path: "/articles/{{slug}}"
-    fields:
-      - { name: "title", label: "Title", widget: "string" }
-      - { name: "date", label: "Date", widget: "datetime" }
-      # Use the user's GitHub login as the stored value (clearer than {{slug}})
-      - {
-          name: "author",
-          label: "Author",
-          widget: "relation",
-          collection: "users",
-          value_field: "github",
-          search_fields: ["name", "github"],
-          display_fields: ["name", "github"],
-        }
-      - {
-          name: "description",
-          label: "Summary",
-          widget: "text",
-          required: false,
-        }
-      - {
-          name: "categories",
-          label: "Categories",
-          widget: "select",
-          multiple: true,
-          options: ["Java", "Spring", "Microservices", "Architecture"],
-        }
-      - { name: "tags", label: "Tags", widget: "list", required: false }
-      - { name: "draft", label: "Draft", widget: "boolean", default: false }
-      - { name: "body", label: "Body", widget: "markdown" }
+  - name: "posts" # Used in routes, e.g., /admin/collections/posts
+    label: "Posts" # Used in the UI
+    folder: "content/posts" # The path to the folder where the documents are stored
+    create: true # Allow users to create new documents in this collection
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}" # Filename template, e.g., YYYY-MM-DD-title.md
+    fields: # The fields for each document, usually in front matter
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Publish Date", name: "date", widget: "datetime" }
+      - { label: "Author", name: "author", widget: "string" }
+      - { label: "Tags", name: "tags", widget: "list" }
+      - { label: "Featured Image", name: "image", widget: "image" }
+      - { label: "Body", name: "body", widget: "markdown" }
 
-  - name: "pages"
-    label: "Pages"
-    folder: "content/pages"
-    create: true
-    slug: "{{slug}}"
-    fields:
-      - { name: "title", label: "Title", widget: "string" }
-      - {
-          name: "description",
-          label: "Description",
-          widget: "text",
-          required: false,
-        }
-      - { name: "body", label: "Body", widget: "markdown" }
-      - { name: "draft", label: "Draft", widget: "boolean", default: false }
+  - name: "settings" # Used in routes, e.g., /admin/collections/settings
+    label: "Settings" # Used in the UI
+    files: # Files collection
+      - label: "Site Settings"
+        name: "site"
+        file: "content/settings/site.json"
+        fields:
+          - { label: "Site Title", name: "title", widget: "string" }
+          - { label: "Site Description", name: "description", widget: "text" }
+          - { label: "Logo", name: "logo", widget: "image" }
+          - {
+              label: "Social Links",
+              name: "social",
+              widget: "object",
+              fields:
+                [
+                  {
+                    label: "Twitter",
+                    name: "twitter",
+                    widget: "string",
+                    required: false,
+                  },
+                  {
+                    label: "GitHub",
+                    name: "github",
+                    widget: "string",
+                    required: false,
+                  },
+                  {
+                    label: "LinkedIn",
+                    name: "linkedin",
+                    widget: "string",
+                    required: false,
+                  },
+                ],
+            }
