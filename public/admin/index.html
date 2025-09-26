@@ -1,29 +1,110 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
     <title>Content Manager</title>
+
+    <script>
+      (function () {
+        // --- helpers ---
+        function persistToken(tok) {
+          if (!tok) return;
+          var payload = JSON.stringify({ token: tok, provider: "github" });
+          try {
+            // Common keys supported by Decap/NetlifyCMS over time
+            localStorage.setItem("netlify-cms.user", payload);
+            localStorage.setItem("decap-cms-user", payload);
+            localStorage.setItem("decap-cms-auth", payload);
+          } catch (e) {
+            console.warn("Token persistence failed:", e);
+          }
+        }
+
+        function gotoRoot() {
+          // Normalize to /admin/#/
+          var base = location.pathname.replace(/index\.html?$/i, "");
+          location.replace(base + "#/");
+        }
+
+        // --- 1) Normalize hash & capture token from URL ---
+        var h = location.hash || "";
+        // Fix case where hash starts with "#/access_token=..." -> "#access_token=..."
+        if (h.indexOf("/access_token=") === 1) {
+          var base = location.pathname.replace(/index\.html?$/i, "");
+          location.replace(base + "#" + h.slice(2));
+          return;
+        }
+
+        // If the token is already in the hash, save & go home
+        var m = h.match(/(?:^#|&|^)access_token=([^&]+)/);
+        if (m) {
+          try {
+            persistToken(decodeURIComponent(m[1]));
+          } catch (e) {
+            console.warn("Failed to decode access_token:", e);
+          }
+          gotoRoot();
+          return;
+        }
+
+        // --- 2) Receive token via postMessage from OAuth popup ---
+        // Allow both production and preview Vercel domains for your OAuth handler
+        var allowProviderOrigin = function (origin) {
+          return /^https:\/\/devnotes-oauth-provider(?:-[a-z0-9-]+)?\.vercel\.app$/.test(
+            origin
+          );
+        };
+
+        window.addEventListener(
+          "message",
+          function (ev) {
+            try {
+              if (!allowProviderOrigin(ev.origin)) return; // only trust the OAuth provider
+              var s = String(ev.data || "");
+              if (!s.startsWith("authorization:github:")) return;
+              var rest = s.slice("authorization:github:".length);
+              var tok = rest;
+              if (rest[0] === "{") tok = JSON.parse(rest).token;
+              persistToken(tok);
+              gotoRoot();
+            } catch (e) {
+              console.warn("postMessage token handling failed:", e);
+            }
+          },
+          false
+        );
+      })();
+    </script>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #f7f7f9;
+      }
+      .boot {
+        color: #667;
+        opacity: 0.75;
+        font-size: 12px;
+        position: fixed;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    </style>
   </head>
   <body>
-    <!-- DecapCMS script (must be included) -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <div class="boot">Loading Content Manager…</div>
 
-    <!-- Optional helper: surface your stashed draft -->
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const raw = localStorage.getItem("draft:article");
-        if (!raw) return;
-        try {
-          console.log(
-            "Found a stashed draft from the app. Paste into fields:",
-            JSON.parse(raw)
-          );
-        } catch (e) {
-          console.warn("Failed to parse stashed draft:", e);
-        }
-      });
-    </script>
+    <!-- Let Decap read config.yml and boot the UI -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </body>
 </html>

@@ -1,9 +1,6 @@
 backend:
-  name: github
-  repo: ConnectTechnologyTeam/devnotes
-  branch: main
-  base_url: https://devnotes-oauth-provider.vercel.app # your OAuth handler base
-  auth_endpoint: /api/auth
+  name: git-gateway
+  branch: duc-develop
 
 # Your live site URL on Netlify (so previews/links resolve correctly)
 site_url: https://symphonious-selkie-b4acc2.netlify.app
