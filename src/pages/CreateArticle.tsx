@@ -116,34 +116,22 @@ const CreateArticle = () => {
 
     setLoading(true);
 
-    try {
-      const selectedCategory = mockCategories.find(
-        (cat) => cat.id === categoryId
-      );
-      const selectedTagsData = mockTags.filter((tag) =>
-        selectedTags.includes(tag.id)
-      );
+    // (Optional) stash form data so the author can paste it in CMS
+    const draft = { title, summary, content, categoryId, selectedTags };
+    localStorage.setItem("draft:article", JSON.stringify(draft));
 
-      // Redirect to CMS for editorial workflow
-      toast({
-        title: "Redirecting to CMS",
-        description:
-          "You will create your article in the CMS for editorial review.",
-      });
+    toast({
+      title: "Redirecting to CMS",
+      description: "You’ll finalize and save the draft there for review.",
+    });
 
-      // Small delay to show toast, then redirect
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1500);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit article. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Send them straight to the CMS “new” entry UI
+    // /admin is where DecapCMS lives; #/collections/<name>/new opens the form
+    setTimeout(() => {
+      window.location.href = "/admin/#/collections/blog/new";
+    }, 900);
+
+    setLoading(false);
   };
 
   return (

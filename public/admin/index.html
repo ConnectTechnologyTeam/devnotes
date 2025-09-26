@@ -8,6 +8,16 @@
   </head>
   <body>
     <!-- DecapCMS script -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <script>
+      // Surface a reminder in CMS to use the stashed draft
+      document.addEventListener("DOMContentLoaded", () => {
+        const raw = localStorage.getItem("draft:article");
+        if (!raw) return;
+        console.log(
+          "Found a stashed draft from the app. Paste into fields:",
+          JSON.parse(raw)
+        );
+      });
+    </script>
   </body>
 </html>
