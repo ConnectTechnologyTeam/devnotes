@@ -7,16 +7,22 @@
     <title>Content Manager</title>
   </head>
   <body>
-    <!-- DecapCMS script -->
+    <!-- DecapCMS script (must be included) -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+
+    <!-- Optional helper: surface your stashed draft -->
     <script>
-      // Surface a reminder in CMS to use the stashed draft
       document.addEventListener("DOMContentLoaded", () => {
         const raw = localStorage.getItem("draft:article");
         if (!raw) return;
-        console.log(
-          "Found a stashed draft from the app. Paste into fields:",
-          JSON.parse(raw)
-        );
+        try {
+          console.log(
+            "Found a stashed draft from the app. Paste into fields:",
+            JSON.parse(raw)
+          );
+        } catch (e) {
+          console.warn("Failed to parse stashed draft:", e);
+        }
       });
     </script>
   </body>

@@ -1,21 +1,89 @@
-publish_mode: editorial_workflow
-
 backend:
   name: github
-  repo: connecttechnologyteam/devnotes
-  branch: duc-develop
-  base_url: https://devnotes-oauth-provider.vercel.app
+  repo: ConnectTechnologyTeam/devnotes
+  branch: main
+  base_url: https://devnotes-oauth-provider.vercel.app # your OAuth handler base
   auth_endpoint: /api/auth
-  callback_url: https://devnotes-oauth-provider.vercel.app/api/callback
-  site_url: https://connecttechnologyteam.github.io/devnotes
+
+# Your live site URL on Netlify (so previews/links resolve correctly)
+site_url: https://symphonious-selkie-b4acc2.netlify.app
+
+# Media storage: files saved in repo under public/uploads,
+# and served at https://<site>/uploads/<file>
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+# Create PRs instead of committing straight to main
+publish_mode: editorial_workflow
 
 collections:
-  - name: blog # 👈 this "name" is used in the URL below
-    label: Blog
-    folder: content/user
+  - name: "users"
+    label: "Users"
+    folder: "content/users"
     create: true
     slug: "{{slug}}"
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Publish Date, name: date, widget: datetime }
-      - { label: Body, name: body, widget: markdown }
+      - { name: "github", label: "GitHub Login", widget: "string" }
+      - { name: "name", label: "Full Name", widget: "string", required: false }
+      - { name: "avatar", label: "Avatar", widget: "image", required: false }
+      - { name: "bio", label: "Bio", widget: "text", required: false }
+      - {
+          name: "role",
+          label: "Role",
+          widget: "select",
+          options: ["admin", "author"],
+          default: "author",
+        }
+
+  - name: "posts"
+    label: "Posts"
+    folder: "content/posts"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    # If your app routes like /articles/:slug (React Router), keep this:
+    preview_path: "/articles/{{slug}}"
+    fields:
+      - { name: "title", label: "Title", widget: "string" }
+      - { name: "date", label: "Date", widget: "datetime" }
+      # Use the user's GitHub login as the stored value (clearer than {{slug}})
+      - {
+          name: "author",
+          label: "Author",
+          widget: "relation",
+          collection: "users",
+          value_field: "github",
+          search_fields: ["name", "github"],
+          display_fields: ["name", "github"],
+        }
+      - {
+          name: "description",
+          label: "Summary",
+          widget: "text",
+          required: false,
+        }
+      - {
+          name: "categories",
+          label: "Categories",
+          widget: "select",
+          multiple: true,
+          options: ["Java", "Spring", "Microservices", "Architecture"],
+        }
+      - { name: "tags", label: "Tags", widget: "list", required: false }
+      - { name: "draft", label: "Draft", widget: "boolean", default: false }
+      - { name: "body", label: "Body", widget: "markdown" }
+
+  - name: "pages"
+    label: "Pages"
+    folder: "content/pages"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { name: "title", label: "Title", widget: "string" }
+      - {
+          name: "description",
+          label: "Description",
+          widget: "text",
+          required: false,
+        }
+      - { name: "body", label: "Body", widget: "markdown" }
+      - { name: "draft", label: "Draft", widget: "boolean", default: false }
