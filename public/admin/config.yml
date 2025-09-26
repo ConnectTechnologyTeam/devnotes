@@ -6,7 +6,7 @@ backend:
   # or
   # name: github
   # repo: your-user/your-repo
-  branch: main
+  branch: duc-develop
 
 collections:
   - name: blog # 👈 this "name" is used in the URL below
