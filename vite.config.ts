@@ -5,31 +5,40 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/devnotes/',
+  base: "/devnotes/",
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(
+    Boolean
+  ),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
+    outDir: "dist",
+    assetsDir: "assets",
     rollupOptions: {
       output: {
-        manualChunks: undefined,
-        format: 'es',
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["react-router-dom"],
+          ui: [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-popover",
+          ],
+          utils: ["clsx", "tailwind-merge", "class-variance-authority"],
+        },
+        format: "es",
       },
     },
-    target: 'esnext',
-    minify: 'terser',
+    target: "esnext",
+    minify: "terser",
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
   },
 }));
