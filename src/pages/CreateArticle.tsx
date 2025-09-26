@@ -133,8 +133,7 @@ const CreateArticle = () => {
 
       // Small delay to show toast, then redirect
       setTimeout(() => {
-        window.location.href = '/devnotes/admin/';
-
+        window.location.href = "/";
       }, 1500);
     } catch (error) {
       toast({
