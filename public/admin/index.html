@@ -7,71 +7,141 @@
 
     <script>
       (function () {
-        // --- helpers ---
+        // ---- Configure this to match config.yml backend.base_url ----
+        var OAUTH_BASE_URL = "https://devnotes-oauth-provider.vercel.app";
+
+        // ---- helpers ----
         function persistToken(tok) {
           if (!tok) return;
           var payload = JSON.stringify({ token: tok, provider: "github" });
           try {
-            // Các key phổ biến mà Decap/Netlify CMS từng dùng
-            localStorage.setItem("netlify-cms.user", payload);
-            localStorage.setItem("decap-cms-user", payload);
-            localStorage.setItem("decap-cms-auth", payload);
-          } catch (e) {}
+            localStorage.setItem("netlify-cms.user", payload); // legacy key
+            localStorage.setItem("decap-cms-user", payload); // decap key
+            localStorage.setItem("decap-cms-auth", payload); // alt key used by some providers
+            console.info("[CMS] token stored");
+          } catch (e) {
+            console.warn("[CMS] failed to store token", e);
+          }
         }
         function gotoRoot() {
-          // Quay về shell của CMS (#/) để dashboard render
-          location.replace(location.pathname + "#/");
+          // Always land on ".../admin/#/" regardless of query/hash variations.
+          var url = new URL(window.location.href);
+          url.hash = "#/";
+          url.search = "";
+          window.location.replace(url.toString());
+        }
+        function readParam(name, fromHash) {
+          var s = fromHash
+            ? (location.hash || "").slice(1)
+            : (location.search || "").slice(1);
+          var p = new URLSearchParams(s);
+          return p.get(name);
         }
 
-        // --- 1) Chuẩn hoá hash & bắt token qua URL ---
-        var h = location.hash || "";
-        // Fix trường hợp "#/access_token=..." => "#access_token=..."
-        if (h.indexOf("/access_token=") === 1) {
-          location.replace(location.pathname + "#" + h.slice(2));
-          return;
-        }
-        // Nếu đã có token trong hash thì lưu & quay về "#/"
-        var m = h.match(/access_token=([^&]+)/);
-        if (m) {
-          persistToken(decodeURIComponent(m[1]));
-          gotoRoot();
-          return;
-        }
+        // ---- 1) Normalize & capture token from URL ----
+        (function () {
+          // Some providers send "#/access_token=...", normalize to "#access_token=..."
+          if ((location.hash || "").indexOf("/access_token=") === 1) {
+            var fixed = location.hash.replace(
+              "#/access_token=",
+              "#access_token="
+            );
+            var url = new URL(location.href);
+            url.hash = fixed;
+            return location.replace(url.toString());
+          }
 
-        // --- 2) Nhận token qua postMessage từ popup callback ---
-        // Chấp nhận cả alias production và preview domain của Vercel cho project này
-        var allowProviderOrigin = function (origin) {
-          return /^https:\/\/devnotes-oauth-provider(-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
-        };
+          // Prefer hash param
+          var token = readParam("access_token", /*fromHash*/ true);
+          if (!token) {
+            // Fallback: some providers put it in the query string (?access_token=...)
+            token = readParam("access_token", /*fromHash*/ false);
+          }
+          if (token) {
+            persistToken(decodeURIComponent(token));
+            return gotoRoot();
+          }
+        })();
 
-        window.addEventListener(
-          "message",
-          function (ev) {
-            try {
-              if (!allowProviderOrigin(ev.origin)) return; // chỉ nhận từ OAuth provider
-              var s = String(ev.data || "");
-              if (!s.startsWith("authorization:github:")) return;
-              var rest = s.slice("authorization:github:".length);
-              var tok = rest;
-              if (rest[0] === "{") tok = JSON.parse(rest).token;
-              persistToken(tok);
-              gotoRoot();
-            } catch (e) {}
-          },
-          false
-        );
+        // ---- 2) Accept token via postMessage from OAuth popup/callback ----
+        (function () {
+          var allowedOrigin;
+          try {
+            allowedOrigin = new URL(OAUTH_BASE_URL).origin; // e.g. https://devnotes-oauth-provider.vercel.app
+          } catch (e) {
+            console.warn("[CMS] invalid OAUTH_BASE_URL", e);
+          }
+
+          window.addEventListener(
+            "message",
+            function (ev) {
+              // Strict origin check
+              if (allowedOrigin && ev.origin !== allowedOrigin) return;
+              var data = ev.data;
+              if (!data) return;
+
+              // Common patterns:
+              // 1) "authorization:github:TOKEN"
+              // 2) "authorization:github:{\"token\":\"TOKEN\"}"
+              try {
+                if (
+                  typeof data === "string" &&
+                  data.startsWith("authorization:github:")
+                ) {
+                  var rest = data.slice("authorization:github:".length);
+                  var tok = rest[0] === "{" ? JSON.parse(rest).token : rest;
+                  if (tok) {
+                    persistToken(tok);
+                    gotoRoot();
+                  }
+                  return;
+                }
+                // Some providers send structured objects
+                if (
+                  typeof data === "object" &&
+                  data.provider === "github" &&
+                  data.token
+                ) {
+                  persistToken(data.token);
+                  gotoRoot();
+                  return;
+                }
+              } catch (e) {
+                console.warn("[CMS] postMessage parse error", e);
+              }
+            },
+            false
+          );
+        })();
       })();
     </script>
 
     <style>
-      html, body { height: 100%; margin: 0; }
-      body { display: grid; place-items: center; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f7f7f9; }
-      .boot { color: #667; opacity: .75; font-size: 12px; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #f7f7f9;
+      }
+      .boot {
+        color: #667;
+        opacity: 0.75;
+        font-size: 12px;
+        position: fixed;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
     </style>
   </head>
   <body>
     <div class="boot">Loading Content Manager…</div>
-    <!-- KHÔNG manual init; để Decap tự đọc config.yml -->
+    <!-- Let Decap auto-read /admin/config.yml -->
     <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
   </body>
 </html>

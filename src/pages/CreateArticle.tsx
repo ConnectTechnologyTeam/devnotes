@@ -1,30 +1,36 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { mockCategories, mockTags, mockArticleService } from '@/lib/mockData';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { Save, Send, Eye } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import MarkdownEditor from '@/components/MarkdownEditor';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { mockCategories, mockTags, mockArticleService } from "@/lib/mockData";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Save, Send, Eye } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 const CreateArticle = () => {
-  const [title, setTitle] = useState('');
-  const [summary, setSummary] = useState('');
-  const [content, setContent] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+  const [content, setContent] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -47,7 +53,7 @@ const CreateArticle = () => {
     if (checked) {
       setSelectedTags([...selectedTags, tagId]);
     } else {
-      setSelectedTags(selectedTags.filter(id => id !== tagId));
+      setSelectedTags(selectedTags.filter((id) => id !== tagId));
     }
   };
 
@@ -62,16 +68,20 @@ const CreateArticle = () => {
     }
 
     setLoading(true);
-    
+
     try {
-      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
-      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
-      
+      const selectedCategory = mockCategories.find(
+        (cat) => cat.id === categoryId
+      );
+      const selectedTagsData = mockTags.filter((tag) =>
+        selectedTags.includes(tag.id)
+      );
+
       await mockArticleService.createArticle({
         title: title.trim(),
-        summary: summary.trim() || 'No summary provided',
-        content: content.trim() || 'No content provided',
-        status: 'DRAFT',
+        summary: summary.trim() || "No summary provided",
+        content: content.trim() || "No content provided",
+        status: "DRAFT",
         authorId: user!.id,
         categoryId: categoryId || mockCategories[0].id,
         category: selectedCategory || mockCategories[0],
@@ -82,7 +92,7 @@ const CreateArticle = () => {
         title: "Draft saved",
         description: "Your article has been saved as a draft.",
       });
-      navigate('/my-articles');
+      navigate("/my-articles");
     } catch (error) {
       toast({
         title: "Error",
@@ -105,20 +115,26 @@ const CreateArticle = () => {
     }
 
     setLoading(true);
-    
+
     try {
-      const selectedCategory = mockCategories.find(cat => cat.id === categoryId);
-      const selectedTagsData = mockTags.filter(tag => selectedTags.includes(tag.id));
-      
+      const selectedCategory = mockCategories.find(
+        (cat) => cat.id === categoryId
+      );
+      const selectedTagsData = mockTags.filter((tag) =>
+        selectedTags.includes(tag.id)
+      );
+
       // Redirect to CMS for editorial workflow
       toast({
         title: "Redirecting to CMS",
-        description: "You will create your article in the CMS for editorial review.",
+        description:
+          "You will create your article in the CMS for editorial review.",
       });
-      
+
       // Small delay to show toast, then redirect
       setTimeout(() => {
         window.location.href = '/devnotes/admin/';
+
       }, 1500);
     } catch (error) {
       toast({
@@ -134,7 +150,7 @@ const CreateArticle = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -143,14 +159,14 @@ const CreateArticle = () => {
               Share your knowledge with the developer community
             </p>
           </div>
-          
+
           <Button
             variant="outline"
             onClick={() => setIsPreview(!isPreview)}
             className="space-x-2"
           >
             <Eye className="h-4 w-4" />
-            <span>{isPreview ? 'Edit' : 'Preview'}</span>
+            <span>{isPreview ? "Edit" : "Preview"}</span>
           </Button>
         </div>
 
@@ -174,7 +190,7 @@ const CreateArticle = () => {
                         className="text-lg"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="summary">Summary *</Label>
                       <Textarea
@@ -185,7 +201,7 @@ const CreateArticle = () => {
                         rows={3}
                       />
                     </div>
-                    
+
                     <MarkdownEditor
                       value={content}
                       onChange={setContent}
@@ -197,25 +213,32 @@ const CreateArticle = () => {
                 ) : (
                   <div className="space-y-6">
                     <div>
-                      <h1 className="text-3xl font-bold mb-4">{title || 'Article Title'}</h1>
+                      <h1 className="text-3xl font-bold mb-4">
+                        {title || "Article Title"}
+                      </h1>
                       <p className="text-xl text-muted-foreground leading-relaxed">
-                        {summary || 'Article summary will appear here...'}
+                        {summary || "Article summary will appear here..."}
                       </p>
                     </div>
-                    
+
                     <div className="prose prose-lg mx-auto">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        urlTransform={(url)=>url}
+                        urlTransform={(url) => url}
                         components={{
                           a: ({ href, children }) => (
-                            <a href={href as string} className="text-primary hover:underline break-words" target="_blank" rel="noreferrer">
+                            <a
+                              href={href as string}
+                              className="text-primary hover:underline break-words"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               {children}
                             </a>
                           ),
                         }}
                       >
-                        {content || 'Article content will appear here...'}
+                        {content || "Article content will appear here..."}
                       </ReactMarkdown>
                     </div>
                   </div>
@@ -246,7 +269,7 @@ const CreateArticle = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Label>Tags</Label>
                   <div className="space-y-2">
@@ -255,7 +278,9 @@ const CreateArticle = () => {
                         <Checkbox
                           id={tag.id}
                           checked={selectedTags.includes(tag.id)}
-                          onCheckedChange={(checked) => handleTagChange(tag.id, checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleTagChange(tag.id, checked as boolean)
+                          }
                         />
                         <Label htmlFor={tag.id} className="text-sm">
                           {tag.name}
@@ -279,18 +304,18 @@ const CreateArticle = () => {
                   className="w-full space-x-2"
                 >
                   <Save className="h-4 w-4" />
-                  <span>{loading ? 'Saving...' : 'Save Draft'}</span>
+                  <span>{loading ? "Saving..." : "Save Draft"}</span>
                 </Button>
-                
+
                 <Button
                   onClick={handleSubmitForReview}
                   disabled={loading}
                   className="w-full space-x-2"
                 >
                   <Send className="h-4 w-4" />
-                  <span>{loading ? 'Submitting...' : 'Submit for Review'}</span>
+                  <span>{loading ? "Submitting..." : "Submit for Review"}</span>
                 </Button>
-                
+
                 <div className="text-xs text-muted-foreground mt-4">
                   * Required fields must be completed before submission
                 </div>
