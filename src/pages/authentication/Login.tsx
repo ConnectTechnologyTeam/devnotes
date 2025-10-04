@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { LogIn, Eye, EyeOff, Github } from "lucide-react";
 
 interface LoginFormData {
   email: string;
@@ -21,6 +21,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -104,6 +105,30 @@ const Login = () => {
     setShowPassword((prev) => !prev);
   }, []);
 
+  const handleGitHubLogin = useCallback(async () => {
+    setGithubLoading(true);
+
+    try {
+      // TODO: Implement GitHub OAuth flow
+      toast({
+        title: "GitHub Login",
+        description: "GitHub authentication will be implemented soon.",
+        variant: "default",
+      });
+
+      // Simulate loading for now
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    } catch (error) {
+      toast({
+        title: "GitHub Login Failed",
+        description: "Unable to authenticate with GitHub. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGithubLoading(false);
+    }
+  }, [toast]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -179,7 +204,7 @@ const Login = () => {
               <Button
                 type="submit"
                 className="w-full h-11 text-base font-medium"
-                disabled={loading}
+                disabled={loading || githubLoading}
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
@@ -191,6 +216,37 @@ const Login = () => {
                 )}
               </Button>
             </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 text-base font-medium"
+              onClick={handleGitHubLogin}
+              disabled={loading || githubLoading}
+            >
+              {githubLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Connecting to GitHub...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Github className="h-5 w-5" />
+                  <span>Continue with GitHub</span>
+                </div>
+              )}
+            </Button>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
