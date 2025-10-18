@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { loginUser, ApiError } from "@/lib/authService";
+import { useAuth } from "@/hooks/useAuth";
+import { ApiError } from "@/lib/authService";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 
 interface LoginFormData {
@@ -47,6 +48,7 @@ const Login = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const handleInputChange = useCallback(
     (field: keyof LoginFormData) =>
@@ -107,20 +109,14 @@ const Login = () => {
       setLoading(true);
 
       try {
-        const response = await loginUser({
-          email: formData.email.trim(),
-          password: formData.password,
-        });
+        const user = await login(formData.email.trim(), formData.password);
 
-        if (response.success) {
+        if (user) {
           toast({
             title: "Welcome back!",
-            description:
-              response.message || "You have been successfully logged in.",
+            description: "You have been successfully logged in.",
           });
           navigate("/");
-        } else {
-          throw new ApiError(response.message || "Login failed");
         }
       } catch (error: unknown) {
         let errorMessage = "Invalid email or password";
@@ -140,7 +136,7 @@ const Login = () => {
         setLoading(false);
       }
     },
-    [formData, navigate, toast, validateForm]
+    [formData, navigate, toast, validateForm, login]
   );
 
   const togglePasswordVisibility = useCallback(() => {

@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { registerUser, ApiError } from "@/lib/authService";
+import { useAuth } from "@/hooks/useAuth";
+import { ApiError } from "@/lib/authService";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 
 interface RegisterFormData {
@@ -70,6 +71,7 @@ const Register = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
 
   const handleInputChange = useCallback(
     (field: keyof RegisterFormData) =>
@@ -146,21 +148,18 @@ const Register = () => {
       setLoading(true);
 
       try {
-        const response = await registerUser({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-        });
+        const user = await register(
+          formData.email.trim(),
+          formData.password,
+          formData.name.trim()
+        );
 
-        if (response.success) {
+        if (user) {
           toast({
             title: "Welcome to DevNotes!",
-            description:
-              response.message || "Your account has been created successfully.",
+            description: "Your account has been created successfully.",
           });
           navigate("/");
-        } else {
-          throw new ApiError(response.message || "Registration failed");
         }
       } catch (error: unknown) {
         let errorMessage = "An error occurred while creating your account.";
@@ -180,7 +179,7 @@ const Register = () => {
         setLoading(false);
       }
     },
-    [formData, navigate, toast, validateForm]
+    [formData, navigate, toast, validateForm, register]
   );
 
   const togglePasswordVisibility = useCallback(() => {
