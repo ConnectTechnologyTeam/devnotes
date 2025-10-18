@@ -5,14 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Eye, EyeOff, Github } from "lucide-react";
+import { loginUser, ApiError } from "@/lib/authService";
+import { LogIn, Eye, EyeOff } from "lucide-react";
 
 interface LoginFormData {
   email: string;
   password: string;
 }
+
+interface ValidationError {
+  field: keyof LoginFormData;
+  message: string;
+}
+
+// Constants for validation
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Validation utility functions
+const validateRequired = (value: string, fieldName: string): string | null => {
+  if (!value.trim()) {
+    return `${fieldName} is required.`;
+  }
+  return null;
+};
+
+const validateEmail = (email: string): string | null => {
+  if (!EMAIL_REGEX.test(email)) {
+    return "Please enter a valid email address.";
+  }
+  return null;
+};
 
 const Login = () => {
   const [formData, setFormData] = useState<LoginFormData>({
@@ -21,11 +44,9 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [githubLoading, setGithubLoading] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login } = useAuth();
 
   const handleInputChange = useCallback(
     (field: keyof LoginFormData) =>
@@ -39,30 +60,36 @@ const Login = () => {
   );
 
   const validateForm = useCallback((): boolean => {
-    if (!formData.email.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      });
-      return false;
+    const errors: ValidationError[] = [];
+
+    // Validate required fields
+    const emailRequiredError = validateRequired(
+      formData.email,
+      "Email address"
+    );
+    if (emailRequiredError) {
+      errors.push({ field: "email", message: emailRequiredError });
+    } else {
+      const emailFormatError = validateEmail(formData.email);
+      if (emailFormatError) {
+        errors.push({ field: "email", message: emailFormatError });
+      }
     }
 
-    if (!formData.password.trim()) {
-      toast({
-        title: "Password required",
-        description: "Please enter your password.",
-        variant: "destructive",
-      });
-      return false;
+    const passwordRequiredError = validateRequired(
+      formData.password,
+      "Password"
+    );
+    if (passwordRequiredError) {
+      errors.push({ field: "password", message: passwordRequiredError });
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    // Show first validation error
+    if (errors.length > 0) {
+      const firstError = errors[0];
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
+        title: "Validation Error",
+        description: firstError.message,
         variant: "destructive",
       });
       return false;
@@ -80,15 +107,30 @@ const Login = () => {
       setLoading(true);
 
       try {
-        await login(formData.email.trim(), formData.password);
-        toast({
-          title: "Welcome back!",
-          description: "You have been successfully logged in.",
+        const response = await loginUser({
+          email: formData.email.trim(),
+          password: formData.password,
         });
-        navigate("/");
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Invalid email or password";
+
+        if (response.success) {
+          toast({
+            title: "Welcome back!",
+            description:
+              response.message || "You have been successfully logged in.",
+          });
+          navigate("/");
+        } else {
+          throw new ApiError(response.message || "Login failed");
+        }
+      } catch (error: unknown) {
+        let errorMessage = "Invalid email or password";
+
+        if (error instanceof ApiError) {
+          errorMessage = error.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
         toast({
           title: "Login failed",
           description: errorMessage,
@@ -98,36 +140,27 @@ const Login = () => {
         setLoading(false);
       }
     },
-    [formData, login, navigate, toast, validateForm]
+    [formData, navigate, toast, validateForm]
   );
 
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword((prev) => !prev);
   }, []);
 
-  const handleGitHubLogin = useCallback(async () => {
-    setGithubLoading(true);
+  // Common input props for password field
+  const passwordInputProps = {
+    disabled: loading,
+    className: "h-11 pr-10",
+    autoComplete: "current-password" as const,
+  };
 
-    try {
-      // TODO: Implement GitHub OAuth flow
-      toast({
-        title: "GitHub Login",
-        description: "GitHub authentication will be implemented soon.",
-        variant: "default",
-      });
-
-      // Simulate loading for now
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } catch (error) {
-      toast({
-        title: "GitHub Login Failed",
-        description: "Unable to authenticate with GitHub. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setGithubLoading(false);
-    }
-  }, [toast]);
+  const passwordToggleButtonProps = {
+    type: "button" as const,
+    variant: "ghost" as const,
+    size: "sm" as const,
+    className: "absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent",
+    disabled: loading,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -177,17 +210,11 @@ const Login = () => {
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleInputChange("password")}
-                    disabled={loading}
-                    className="h-11 pr-10"
-                    autoComplete="current-password"
+                    {...passwordInputProps}
                   />
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent"
+                    {...passwordToggleButtonProps}
                     onClick={togglePasswordVisibility}
-                    disabled={loading}
                     aria-label={
                       showPassword ? "Hide password" : "Show password"
                     }
@@ -204,7 +231,7 @@ const Login = () => {
               <Button
                 type="submit"
                 className="w-full h-11 text-base font-medium"
-                disabled={loading || githubLoading}
+                disabled={loading}
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
@@ -216,48 +243,6 @@ const Login = () => {
                 )}
               </Button>
             </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 text-base font-medium"
-              onClick={handleGitHubLogin}
-              disabled={loading || githubLoading}
-            >
-              {githubLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Connecting to GitHub...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Github className="h-5 w-5" />
-                  <span>Continue with GitHub</span>
-                </div>
-              )}
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  New to DevNotes?
-                </span>
-              </div>
-            </div>
 
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
