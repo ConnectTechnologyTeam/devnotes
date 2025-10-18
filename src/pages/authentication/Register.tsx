@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Github, Eye, EyeOff } from "lucide-react";
+import { registerUser, ApiError } from "@/lib/authService";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 
 interface RegisterFormData {
   name: string;
@@ -15,6 +15,47 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
 }
+
+interface ValidationError {
+  field: keyof RegisterFormData;
+  message: string;
+}
+
+// Constants for validation
+const MIN_PASSWORD_LENGTH = 6;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Validation utility functions
+const validateRequired = (value: string, fieldName: string): string | null => {
+  if (!value.trim()) {
+    return `${fieldName} is required.`;
+  }
+  return null;
+};
+
+const validateEmail = (email: string): string | null => {
+  if (!EMAIL_REGEX.test(email)) {
+    return "Please enter a valid email address.";
+  }
+  return null;
+};
+
+const validatePassword = (password: string): string | null => {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`;
+  }
+  return null;
+};
+
+const validatePasswordMatch = (
+  password: string,
+  confirmPassword: string
+): string | null => {
+  if (password !== confirmPassword) {
+    return "Passwords don't match.";
+  }
+  return null;
+};
 
 const Register = () => {
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -26,11 +67,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [githubLoading, setGithubLoading] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { register } = useAuth();
 
   const handleInputChange = useCallback(
     (field: keyof RegisterFormData) =>
@@ -44,58 +83,52 @@ const Register = () => {
   );
 
   const validateForm = useCallback((): boolean => {
-    if (!formData.name.trim()) {
-      toast({
-        title: "Name required",
-        description: "Please enter your full name.",
-        variant: "destructive",
-      });
-      return false;
+    const errors: ValidationError[] = [];
+
+    // Validate required fields
+    const nameError = validateRequired(formData.name, "Full name");
+    if (nameError) errors.push({ field: "name", message: nameError });
+
+    const emailRequiredError = validateRequired(
+      formData.email,
+      "Email address"
+    );
+    if (emailRequiredError) {
+      errors.push({ field: "email", message: emailRequiredError });
+    } else {
+      const emailFormatError = validateEmail(formData.email);
+      if (emailFormatError) {
+        errors.push({ field: "email", message: emailFormatError });
+      }
     }
 
-    if (!formData.email.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      });
-      return false;
+    const passwordRequiredError = validateRequired(
+      formData.password,
+      "Password"
+    );
+    if (passwordRequiredError) {
+      errors.push({ field: "password", message: passwordRequiredError });
+    } else {
+      const passwordLengthError = validatePassword(formData.password);
+      if (passwordLengthError) {
+        errors.push({ field: "password", message: passwordLengthError });
+      }
     }
 
-    // Validate Gmail email format
-    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    if (!gmailRegex.test(formData.email)) {
-      toast({
-        title: "Invalid email",
-        description:
-          "Please use a Gmail address (example@gmail.com) to register.",
-        variant: "destructive",
-      });
-      return false;
+    const passwordMatchError = validatePasswordMatch(
+      formData.password,
+      formData.confirmPassword
+    );
+    if (passwordMatchError) {
+      errors.push({ field: "confirmPassword", message: passwordMatchError });
     }
 
-    if (!formData.password.trim()) {
+    // Show first validation error
+    if (errors.length > 0) {
+      const firstError = errors[0];
       toast({
-        title: "Password required",
-        description: "Please enter a password.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are identical.",
+        title: "Validation Error",
+        description: firstError.message,
         variant: "destructive",
       });
       return false;
@@ -113,21 +146,31 @@ const Register = () => {
       setLoading(true);
 
       try {
-        await register(
-          formData.email.trim(),
-          formData.password,
-          formData.name.trim()
-        );
-        toast({
-          title: "Welcome to DevNotes!",
-          description: "Your account has been created successfully.",
+        const response = await registerUser({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
         });
-        navigate("/");
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "An error occurred while creating your account.";
+
+        if (response.success) {
+          toast({
+            title: "Welcome to DevNotes!",
+            description:
+              response.message || "Your account has been created successfully.",
+          });
+          navigate("/");
+        } else {
+          throw new ApiError(response.message || "Registration failed");
+        }
+      } catch (error: unknown) {
+        let errorMessage = "An error occurred while creating your account.";
+
+        if (error instanceof ApiError) {
+          errorMessage = error.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
         toast({
           title: "Registration failed",
           description: errorMessage,
@@ -137,32 +180,8 @@ const Register = () => {
         setLoading(false);
       }
     },
-    [formData, register, navigate, toast, validateForm]
+    [formData, navigate, toast, validateForm]
   );
-
-  const handleGitHubLogin = useCallback(async () => {
-    setGithubLoading(true);
-
-    try {
-      // TODO: Implement GitHub OAuth flow
-      toast({
-        title: "GitHub Registration",
-        description: "GitHub authentication will be implemented soon.",
-        variant: "default",
-      });
-
-      // Simulate loading for now
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } catch (error) {
-      toast({
-        title: "GitHub Registration Failed",
-        description: "Unable to authenticate with GitHub. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setGithubLoading(false);
-    }
-  }, [toast]);
 
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword((prev) => !prev);
@@ -171,6 +190,21 @@ const Register = () => {
   const toggleConfirmPasswordVisibility = useCallback(() => {
     setShowConfirmPassword((prev) => !prev);
   }, []);
+
+  // Common input props for password fields
+  const passwordInputProps = {
+    disabled: loading,
+    className: "h-11 pr-10",
+    autoComplete: "new-password" as const,
+  };
+
+  const passwordToggleButtonProps = {
+    type: "button" as const,
+    variant: "ghost" as const,
+    size: "sm" as const,
+    className: "absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent",
+    disabled: loading,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -204,7 +238,7 @@ const Register = () => {
                   placeholder="Enter your full name"
                   value={formData.name}
                   onChange={handleInputChange("name")}
-                  disabled={loading || githubLoading}
+                  disabled={loading}
                   className="h-11"
                   autoComplete="name"
                   autoFocus
@@ -213,21 +247,18 @@ const Register = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  Gmail Address
+                  Email Address
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your Gmail address (example@gmail.com)"
+                  placeholder="Enter your email address"
                   value={formData.email}
                   onChange={handleInputChange("email")}
-                  disabled={loading || githubLoading}
+                  disabled={loading}
                   className="h-11"
                   autoComplete="email"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Only Gmail addresses are accepted for registration
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -241,17 +272,11 @@ const Register = () => {
                     placeholder="Create a password"
                     value={formData.password}
                     onChange={handleInputChange("password")}
-                    disabled={loading || githubLoading}
-                    className="h-11 pr-10"
-                    autoComplete="new-password"
+                    {...passwordInputProps}
                   />
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent"
+                    {...passwordToggleButtonProps}
                     onClick={togglePasswordVisibility}
-                    disabled={loading || githubLoading}
                     aria-label={
                       showPassword ? "Hide password" : "Show password"
                     }
@@ -279,17 +304,11 @@ const Register = () => {
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={handleInputChange("confirmPassword")}
-                    disabled={loading || githubLoading}
-                    className="h-11 pr-10"
-                    autoComplete="new-password"
+                    {...passwordInputProps}
                   />
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent"
+                    {...passwordToggleButtonProps}
                     onClick={toggleConfirmPasswordVisibility}
-                    disabled={loading || githubLoading}
                     aria-label={
                       showConfirmPassword
                         ? "Hide confirm password"
@@ -308,7 +327,7 @@ const Register = () => {
               <Button
                 type="submit"
                 className="w-full h-11 text-base font-medium"
-                disabled={loading || githubLoading}
+                disabled={loading}
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
@@ -320,48 +339,6 @@ const Register = () => {
                 )}
               </Button>
             </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 text-base font-medium"
-              onClick={handleGitHubLogin}
-              disabled={loading || githubLoading}
-            >
-              {githubLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Connecting to GitHub...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Github className="h-5 w-5" />
-                  <span>Continue with GitHub</span>
-                </div>
-              )}
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Already have an account?
-                </span>
-              </div>
-            </div>
 
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
