@@ -56,7 +56,7 @@ const HeroSection = ({ user }: HeroSectionProps) => {
             <Button
               variant="outline"
               size="lg"
-              className="w-full sm:w-auto border-white text-white hover:bg-white/10 px-6 sm:px-8 py-3 text-base sm:text-lg min-h-[44px]"
+              className="w-full sm:w-auto border-white text-white hover:bg-white/10 hover:text-white bg-transparent px-6 sm:px-8 py-3 text-base sm:text-lg min-h-[44px]"
             >
               Browse Articles
             </Button>
