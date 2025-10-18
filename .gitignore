@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# JSON Server files (local development only)
+db.json
+server.cjs
+server.js
+json-server.json
+test-server.js
+JSON_SERVER_SETUP.md
