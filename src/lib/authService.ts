@@ -18,15 +18,49 @@ const DEFAULT_HEADERS = {
   "Content-Type": "application/json",
 } as const;
 
+const STORAGE_KEYS = {
+  TOKEN: "auth_token",
+} as const;
+
+// JWT token utility functions
+export const decodeJWT = (token: string): Record<string, any> | null => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decoding JWT token:", error);
+    return null;
+  }
+};
+
 export interface RegisterRequest {
-  name: string;
+  username: string;
   email: string;
   password: string;
+}
+
+export interface RegisterResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
 }
 
 export interface AuthResponse {
@@ -59,23 +93,34 @@ export class ApiError extends Error implements AuthError {
 const getApiBaseUrl = (): string => {
   return (
     import.meta.env.VITE_API_URL ||
-    (import.meta.env.DEV ? "http://localhost:3001" : "https://api.devnotes.com")
+    (import.meta.env.DEV ? "http://localhost:8081" : "https://api.devnotes.com")
   );
 };
 
 // Generic API request helper
 const apiRequest = async <T = AuthResponse>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  includeAuth: boolean = true
 ): Promise<T> => {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint}`;
 
+  const headers: Record<string, string> = {
+    ...DEFAULT_HEADERS,
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add Authorization header if requested and token is available
+  if (includeAuth) {
+    const token = sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   const defaultOptions: RequestInit = {
-    headers: {
-      ...DEFAULT_HEADERS,
-      ...options.headers,
-    },
+    headers,
     ...options,
   };
 
@@ -114,21 +159,29 @@ const apiRequest = async <T = AuthResponse>(
  */
 export const registerUser = async (
   data: RegisterRequest
-): Promise<AuthResponse> => {
-  return apiRequest<AuthResponse>(API_ENDPOINTS.REGISTER, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+): Promise<RegisterResponse> => {
+  return apiRequest<RegisterResponse>(
+    API_ENDPOINTS.REGISTER,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    false // Don't include auth header for registration
+  );
 };
 
 /**
  * Login user
  */
-export const loginUser = async (data: LoginRequest): Promise<AuthResponse> => {
-  return apiRequest<AuthResponse>(API_ENDPOINTS.LOGIN, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export const loginUser = async (data: LoginRequest): Promise<LoginResponse> => {
+  return apiRequest<LoginResponse>(
+    API_ENDPOINTS.LOGIN,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    false // Don't include auth header for login
+  );
 };
 
 /**

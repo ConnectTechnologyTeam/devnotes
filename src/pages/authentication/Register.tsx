@@ -148,18 +148,19 @@ const Register = () => {
       setLoading(true);
 
       try {
-        const user = await register(
+        const success = await register(
           formData.email.trim(),
           formData.password,
           formData.name.trim()
         );
 
-        if (user) {
+        if (success) {
           toast({
-            title: "Welcome to DevNotes!",
-            description: "Your account has been created successfully.",
+            title: "Account created successfully!",
+            description:
+              "Your account has been created. Please log in to continue.",
           });
-          navigate("/");
+          navigate("/login");
         }
       } catch (error: unknown) {
         let errorMessage = "An error occurred while creating your account.";

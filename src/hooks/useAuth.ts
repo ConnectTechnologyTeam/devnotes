@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { mockArticleService, User } from "@/lib/mockData";
-import { loginUser, registerUser, AuthResponse } from "@/lib/authService";
+import {
+  loginUser,
+  registerUser,
+  AuthResponse,
+  RegisterResponse,
+  LoginResponse,
+  decodeJWT,
+} from "@/lib/authService";
 
 // Constants
 const STORAGE_KEYS = {
@@ -95,7 +102,52 @@ export const useAuth = () => {
   }, []);
 
   /**
-   * Convert API response to User type and handle authentication success
+   * Handle login success with new JWT token response format
+   */
+  const handleLoginSuccess = useCallback(
+    (response: LoginResponse): User => {
+      if (!response.accessToken) {
+        throw new Error("No access token received from server");
+      }
+
+      // Decode JWT token to get user information
+      const tokenPayload = decodeJWT(response.accessToken);
+      if (!tokenPayload) {
+        throw new Error("Invalid access token received");
+      }
+
+      // Extract user information from JWT payload
+      // Based on the sample JWT: {"role":"USER","sub":"teo@gmail.com","iat":1760878452,"exp":1760964852}
+      const userData: User = {
+        id: tokenPayload.sub || tokenPayload.userId || "unknown", // Use sub (email) as ID for now
+        name:
+          tokenPayload.name ||
+          tokenPayload.username ||
+          tokenPayload.sub?.split("@")[0] ||
+          "Unknown User",
+        email: tokenPayload.sub || tokenPayload.email || "unknown@example.com",
+        role: tokenPayload.role || "USER",
+      };
+
+      // Validate role before proceeding
+      if (!isValidUserRole(userData.role)) {
+        throw new Error("Invalid user role received from server");
+      }
+
+      // Store auth data and update state
+      storeAuthData(userData, response.accessToken);
+      setUser(userData);
+
+      // Refresh articles (side effect)
+      mockArticleService.refreshArticles();
+
+      return userData;
+    },
+    [storeAuthData]
+  );
+
+  /**
+   * Convert API response to User type and handle authentication success (legacy)
    */
   const handleAuthSuccess = useCallback(
     (response: AuthResponse): User => {
@@ -145,35 +197,42 @@ export const useAuth = () => {
 
       try {
         const response = await loginUser({ email: email.trim(), password });
-        return handleAuthSuccess(response);
+        return handleLoginSuccess(response);
       } catch (error) {
         throw error instanceof Error ? error : new Error("Login failed");
       }
     },
-    [handleAuthSuccess]
+    [handleLoginSuccess]
   );
 
   /**
    * Register new user account
+   * Note: This function doesn't store the token, just validates the registration
    */
   const register = useCallback(
-    async (email: string, password: string, name: string): Promise<User> => {
+    async (email: string, password: string, name: string): Promise<boolean> => {
       if (!email?.trim() || !password?.trim() || !name?.trim()) {
         throw new Error("Email, password, and name are required");
       }
 
       try {
         const response = await registerUser({
+          username: name.trim(), // Use username field as per new API
           email: email.trim(),
           password,
-          name: name.trim(),
         });
-        return handleAuthSuccess(response);
+
+        // Check if we got a valid response with access token
+        if (response && response.accessToken) {
+          return true; // Registration successful, but don't store token
+        }
+
+        throw new Error("Invalid response from server");
       } catch (error) {
         throw error instanceof Error ? error : new Error("Registration failed");
       }
     },
-    [handleAuthSuccess]
+    []
   );
 
   /**
