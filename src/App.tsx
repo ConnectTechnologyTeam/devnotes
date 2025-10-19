@@ -20,7 +20,7 @@ import NotFound from "./pages/NotFound";
 import CategoryArticles from "./pages/CategoryArticles";
 import TagArticles from "./pages/TagArticles";
 import AdminUsers from "./pages/AdminUsers";
-import UserProfile from "./pages/UserProfile";
+import { UserProfile } from "./pages/user";
 import AuthGuard from "./components/AuthGuard";
 
 const queryClient = new QueryClient();
