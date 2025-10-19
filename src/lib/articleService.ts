@@ -2,9 +2,9 @@ import { Article, Category, Tag, User } from "./mockData";
 
 // API Configuration
 // This can be easily changed to point to a real production API
-const API_BASE_URL = import.meta.env.DEV
-  ? "http://localhost:3001/api"
-  : import.meta.env.VITE_API_URL || "https://api.devnotes.com/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:8081/api" : "https://api.devnotes.com");
 
 // Configuration object to make it easy to switch to real service
 export const API_CONFIG = {

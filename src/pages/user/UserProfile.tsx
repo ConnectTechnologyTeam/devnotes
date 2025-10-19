@@ -5,20 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { articleService, PostResponse } from "@/lib/articleService";
-import ImageUpload from "@/components/ImageUpload";
 import { useToast } from "@/hooks/use-toast";
-import { Edit3, Calendar, Eye } from "lucide-react";
+import { User, Calendar, Eye } from "lucide-react";
 
 // Types
 interface ProfileData {
   name: string;
   email?: string;
-  avatar?: string;
   role?: string;
 }
-
-// Constants
-const STORAGE_KEY = "devnotes_user";
 
 const UserProfile = () => {
   const { user } = useAuth();
@@ -31,20 +26,17 @@ const UserProfile = () => {
       return {
         name: "",
         email: "",
-        avatar: "",
         role: "",
       };
     }
     return {
       name: user.name || "",
       email: user.email || "",
-      avatar: (user as any).avatarUrl || (user as any).avatar_url || "",
       role: user.role || "",
     };
   });
   const [posts, setPosts] = useState<PostResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
 
   // Load user articles from API and update profile if needed
   const loadProfileData = useCallback(async () => {
@@ -61,7 +53,6 @@ const UserProfile = () => {
       setProfile({
         name: user.name || "",
         email: user.email || "",
-        avatar: (user as any).avatarUrl || (user as any).avatar_url || "",
         role: user.role || "",
       });
 
@@ -100,40 +91,6 @@ const UserProfile = () => {
     loadProfileData();
   }, [loadProfileData]);
 
-  // Handle avatar upload
-  const handleAvatarUpload = useCallback(
-    (imageUrl: string) => {
-      setProfile((prev) => ({ ...prev, avatar: imageUrl }));
-
-      // Persist avatar URL in localStorage for reuse
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          parsed.avatarUrl = imageUrl;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-        }
-      } catch (error) {
-        // Silently handle localStorage errors
-      }
-
-      setIsEditingAvatar(false);
-      toast({
-        title: "Avatar updated",
-        description: "Your profile picture has been updated successfully.",
-      });
-    },
-    [toast]
-  );
-
-  // Handle image error
-  const handleImageError = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      e.currentTarget.style.display = "none";
-    },
-    []
-  );
-
   // Format date helper
   const formatDate = useCallback((dateString?: string) => {
     if (!dateString) return null;
@@ -165,30 +122,8 @@ const UserProfile = () => {
       <div className="container py-12">
         {/* Profile Header */}
         <div className="flex items-start gap-6 mb-10">
-          <div className="relative group">
-            {profile.avatar ? (
-              <img
-                src={profile.avatar}
-                alt={profile.name}
-                className="h-20 w-20 rounded-full object-cover bg-muted"
-                onError={handleImageError}
-              />
-            ) : (
-              <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
-                <span className="text-lg font-semibold text-muted-foreground">
-                  {profile.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute -bottom-2 -right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setIsEditingAvatar(true)}
-              aria-label="Edit avatar"
-            >
-              <Edit3 className="h-3 w-3" />
-            </Button>
+          <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+            <User className="h-10 w-10 text-muted-foreground" />
           </div>
 
           <div className="flex-1">
@@ -203,30 +138,6 @@ const UserProfile = () => {
             )}
           </div>
         </div>
-
-        {/* Avatar Upload Modal */}
-        {isEditingAvatar && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">
-                Update Profile Picture
-              </h3>
-              <ImageUpload
-                onImageInsert={handleAvatarUpload}
-                className="mb-4"
-                size="lg"
-              />
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditingAvatar(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Articles Section */}
         <section>
@@ -244,9 +155,6 @@ const UserProfile = () => {
           {posts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">No articles yet.</p>
-              <Link to="/create">
-                <Button>Write your first article</Button>
-              </Link>
             </div>
           ) : (
             <div className="space-y-4">
