@@ -4,12 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { Home } from "./pages/landing";
-import ArticleDetail from "./pages/ArticleDetail";
-import Articles from "./pages/Articles";
-import EditArticle from "./pages/EditArticle";
+import {
+  ArticleDetail,
+  Articles,
+  EditArticle,
+  MyArticles,
+  CreateArticle,
+} from "./pages/articles";
 import { Login, Register } from "./pages/authentication";
-import MyArticles from "./pages/MyArticles";
-import CreateArticle from "./pages/CreateArticle";
 import AdminDashboard from "./pages/AdminDashboard";
 import Categories from "./pages/Categories";
 import Tags from "./pages/Tags";
@@ -32,13 +34,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/articles" element={<Articles />} />
-          <Route path="/articles/:slug/edit" element={<EditArticle />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route element={<AuthGuard />}>
             <Route path="/my-articles" element={<MyArticles />} />
             <Route path="/create" element={<CreateArticle />} />
+            <Route path="/articles/:slug/edit" element={<EditArticle />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/profile" element={<UserProfile />} />

@@ -1,4 +1,20 @@
-import { useState } from "react";
+/**
+ * CreateArticle Component
+ *
+ * This component has been updated to use API services instead of mock data.
+ * All data (categories, tags, articles) is now fetched from the JSON Server API.
+ *
+ * To switch to a real production service:
+ * 1. Update API_CONFIG.BASE_URL in src/lib/articleService.ts
+ * 2. Ensure your production API follows the same endpoint structure:
+ *    - GET /api/categories - Returns array of categories
+ *    - GET /api/tags - Returns array of tags
+ *    - POST /api/posts - Creates new article/post
+ * 3. Update API_CONFIG.USE_MOCK_SERVICE to false for production
+ *
+ * The component handles loading states and error handling automatically.
+ */
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -14,13 +30,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockCategories, mockTags, mockArticleService } from "@/lib/mockData";
+import {
+  articleService,
+  categoryService,
+  tagService,
+  ApiError,
+} from "@/lib/articleService";
+import { Category, Tag } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Send, Eye } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MarkdownEditor from "@/components/MarkdownEditor";
+
+// Constants
+const DRAFT_STORAGE_KEY = "draft:article";
+const CMS_REDIRECT_DELAY = 900;
+const DEFAULT_SUMMARY = "No summary provided";
+const DEFAULT_CONTENT = "No content provided";
+
+// Types
+interface ArticleFormData {
+  title: string;
+  summary: string;
+  content: string;
+  categoryId: string;
+  selectedTags: string[];
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  message?: string;
+}
 
 const CreateArticle = () => {
   const [title, setTitle] = useState("");
@@ -31,37 +73,115 @@ const CreateArticle = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // API data state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
-          <p className="text-muted-foreground mt-4">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Fetch categories and tags from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setDataLoading(true);
 
-  // Creation is handled by CMS; show link instead of form when not logged in
+        // Fetch categories and tags in parallel
+        const [categoriesData, tagsData] = await Promise.all([
+          categoryService.getCategories(),
+          tagService.getTags(),
+        ]);
 
-  const handleTagChange = (tagId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTags([...selectedTags, tagId]);
-    } else {
-      setSelectedTags(selectedTags.filter((id) => id !== tagId));
-    }
-  };
+        setCategories(categoriesData);
+        setTags(tagsData);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to fetch categories and tags:", error);
+        toast({
+          title: "Error loading data",
+          description:
+            "Failed to load categories and tags. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setDataLoading(false);
+      }
+    };
 
-  const handleSaveDraft = async () => {
+    fetchData();
+  }, [toast]);
+
+  // Validation functions
+  const validateDraftForm = useCallback((): ValidationResult => {
     if (!title.trim()) {
+      return {
+        isValid: false,
+        message: "Please enter a title for your article.",
+      };
+    }
+    return { isValid: true };
+  }, [title]);
+
+  const validateSubmitForm = useCallback((): ValidationResult => {
+    if (!title.trim()) {
+      return {
+        isValid: false,
+        message: "Please enter a title for your article.",
+      };
+    }
+    if (!summary.trim()) {
+      return {
+        isValid: false,
+        message: "Please enter a summary for your article.",
+      };
+    }
+    if (!content.trim()) {
+      return {
+        isValid: false,
+        message: "Please enter content for your article.",
+      };
+    }
+    if (!categoryId) {
+      return {
+        isValid: false,
+        message: "Please select a category for your article.",
+      };
+    }
+    return { isValid: true };
+  }, [title, summary, content, categoryId]);
+
+  // Memoized derived data
+  const formData: ArticleFormData = useMemo(
+    () => ({
+      title,
+      summary,
+      content,
+      categoryId,
+      selectedTags,
+    }),
+    [title, summary, content, categoryId, selectedTags]
+  );
+
+  // Event handlers with memoization
+  const handleTagChange = useCallback((tagId: string, checked: boolean) => {
+    setSelectedTags((prev) =>
+      checked ? [...prev, tagId] : prev.filter((id) => id !== tagId)
+    );
+  }, []);
+
+  const togglePreview = useCallback(() => {
+    setIsPreview((prev) => !prev);
+  }, []);
+
+  const handleSaveDraft = useCallback(async () => {
+    // AuthGuard ensures user is always available when this component renders
+    const validation = validateDraftForm();
+    if (!validation.isValid) {
       toast({
         title: "Title required",
-        description: "Please enter a title for your article.",
+        description: validation.message,
         variant: "destructive",
       });
       return;
@@ -70,22 +190,15 @@ const CreateArticle = () => {
     setLoading(true);
 
     try {
-      const selectedCategory = mockCategories.find(
-        (cat) => cat.id === categoryId
-      );
-      const selectedTagsData = mockTags.filter((tag) =>
-        selectedTags.includes(tag.id)
-      );
-
-      await mockArticleService.createArticle({
+      await articleService.createArticle({
         title: title.trim(),
-        summary: summary.trim() || "No summary provided",
-        content: content.trim() || "No content provided",
+        summary: summary.trim() || DEFAULT_SUMMARY,
+        content: content.trim() || DEFAULT_CONTENT,
         status: "DRAFT",
-        authorId: user!.id,
-        categoryId: categoryId || mockCategories[0].id,
-        category: selectedCategory || mockCategories[0],
-        tags: selectedTagsData,
+        authorId: user.id,
+        categoryId:
+          categoryId || (categories.length > 0 ? categories[0].id : ""),
+        tags: selectedTags, // Use tag IDs directly
       });
 
       toast({
@@ -94,21 +207,43 @@ const CreateArticle = () => {
       });
       navigate("/my-articles");
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to save draft:", error);
+
+      let errorMessage = "Failed to save draft. Please try again.";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: "Failed to save draft. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    user,
+    validateDraftForm,
+    title,
+    summary,
+    content,
+    categoryId,
+    categories,
+    selectedTags,
+    navigate,
+    toast,
+  ]);
 
-  const handleSubmitForReview = async () => {
-    if (!title.trim() || !summary.trim() || !content.trim() || !categoryId) {
+  const handleSubmitForReview = useCallback(async () => {
+    const validation = validateSubmitForm();
+    if (!validation.isValid) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields before submitting.",
+        description:
+          validation.message ||
+          "Please fill in all required fields before submitting.",
         variant: "destructive",
       });
       return;
@@ -116,23 +251,81 @@ const CreateArticle = () => {
 
     setLoading(true);
 
-    // (Optional) stash form data so the author can paste it in CMS
-    const draft = { title, summary, content, categoryId, selectedTags };
-    localStorage.setItem("draft:article", JSON.stringify(draft));
+    try {
+      // Store form data for CMS integration
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
 
-    toast({
-      title: "Redirecting to CMS",
-      description: "You’ll finalize and save the draft there for review.",
-    });
+      toast({
+        title: "Redirecting to CMS",
+        description: "You'll finalize and save the draft there for review.",
+      });
 
-    // Send them straight to the CMS “new” entry UI
-    // /admin is where DecapCMS lives; #/collections/<name>/new opens the form
-    setTimeout(() => {
-      window.location.href = "/admin/#/collections/blog/new";
-    }, 900);
+      // Redirect to CMS after delay
+      setTimeout(() => {
+        window.location.href = "/admin/#/collections/blog/new";
+      }, CMS_REDIRECT_DELAY);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to prepare for CMS submission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare submission. Please try again.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  }, [validateSubmitForm, formData, toast]);
 
-    setLoading(false);
-  };
+  // Memoized input handlers
+  const handleTitleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value),
+    []
+  );
+
+  const handleSummaryChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => setSummary(e.target.value),
+    []
+  );
+
+  // Memoized markdown components
+  const markdownComponents = useMemo(
+    () => ({
+      a: ({
+        href,
+        children,
+      }: {
+        href?: string;
+        children?: React.ReactNode;
+      }) => (
+        <a
+          href={href as string}
+          className="text-primary hover:underline break-words"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {children}
+        </a>
+      ),
+    }),
+    []
+  );
+
+  // Show loading state while fetching data
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-12 max-w-6xl">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+              <p className="text-muted-foreground mt-4">Loading form data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,7 +342,7 @@ const CreateArticle = () => {
 
           <Button
             variant="outline"
-            onClick={() => setIsPreview(!isPreview)}
+            onClick={togglePreview}
             className="space-x-2"
           >
             <Eye className="h-4 w-4" />
@@ -173,7 +366,7 @@ const CreateArticle = () => {
                         id="title"
                         placeholder="Enter article title"
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
+                        onChange={handleTitleChange}
                         className="text-lg"
                       />
                     </div>
@@ -184,7 +377,7 @@ const CreateArticle = () => {
                         id="summary"
                         placeholder="Brief summary of your article"
                         value={summary}
-                        onChange={(e) => setSummary(e.target.value)}
+                        onChange={handleSummaryChange}
                         rows={3}
                       />
                     </div>
@@ -212,18 +405,7 @@ const CreateArticle = () => {
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         urlTransform={(url) => url}
-                        components={{
-                          a: ({ href, children }) => (
-                            <a
-                              href={href as string}
-                              className="text-primary hover:underline break-words"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {children}
-                            </a>
-                          ),
-                        }}
+                        components={markdownComponents}
                       >
                         {content || "Article content will appear here..."}
                       </ReactMarkdown>
@@ -248,7 +430,7 @@ const CreateArticle = () => {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockCategories.map((category) => (
+                      {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
@@ -260,7 +442,7 @@ const CreateArticle = () => {
                 <div className="space-y-3">
                   <Label>Tags</Label>
                   <div className="space-y-2">
-                    {mockTags.map((tag) => (
+                    {tags.map((tag) => (
                       <div key={tag.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={tag.id}

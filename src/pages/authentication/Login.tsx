@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,12 @@ interface ValidationError {
 
 // Constants for validation
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
 
 // Validation utility functions
 const validateRequired = (value: string, fieldName: string): string | null => {
@@ -47,8 +53,12 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+
+  // Get the intended destination from location state, default to home
+  const from = (location.state as LocationState)?.from?.pathname || "/";
 
   const handleInputChange = useCallback(
     (field: keyof LoginFormData) =>
@@ -116,7 +126,7 @@ const Login = () => {
             title: "Welcome back!",
             description: "You have been successfully logged in.",
           });
-          navigate("/");
+          navigate(from, { replace: true });
         }
       } catch (error: unknown) {
         let errorMessage = "Invalid email or password";
@@ -136,7 +146,7 @@ const Login = () => {
         setLoading(false);
       }
     },
-    [formData, navigate, toast, validateForm, login]
+    [formData, navigate, toast, validateForm, login, from]
   );
 
   const togglePasswordVisibility = useCallback(() => {

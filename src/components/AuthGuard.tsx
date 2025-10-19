@@ -1,7 +1,7 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { useEffect, useRef } from 'react';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef } from "react";
 
 export const AuthGuard = () => {
   const { isLoggedIn, loading } = useAuth();
@@ -12,19 +12,30 @@ export const AuthGuard = () => {
   useEffect(() => {
     if (!loading && !isLoggedIn && !notifiedRef.current) {
       notifiedRef.current = true;
-      toast({ title: 'Please sign in to write articles', description: 'You need to log in to access this page.' });
+      toast({
+        title: "Authentication Required",
+        description: "You need to log in to access this page.",
+        variant: "destructive",
+      });
     }
-  }, [loading, isLoggedIn]);
+  }, [loading, isLoggedIn, toast]);
 
-  if (loading) return null;
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
   if (!isLoggedIn) {
-    // Redirect to login (or CMS /admin) preserving intended path
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  // User is authenticated, render the protected route
   return <Outlet />;
 };
 
 export default AuthGuard;
-
-
-
