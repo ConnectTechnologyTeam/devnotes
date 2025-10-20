@@ -17,7 +17,7 @@ import { mockCategories, mockTags } from "@/lib/mockData";
 import { articleService, ApiError, PostResponse } from "@/lib/articleService";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import MarkdownEditor from "@/components/MarkdownEditor";
+import { MarkdownEditor } from "@/components/editor";
 
 const EditArticle = () => {
   const { id } = useParams<{ id: string }>();

@@ -4,7 +4,9 @@ import { Article, Category, Tag, User } from "./mockData";
 // This can be easily changed to point to a real production API
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:8081/api" : "https://api.devnotes.com");
+  (import.meta.env.DEV
+    ? "http://localhost:8081/api"
+    : "https://api.devnotes.com");
 
 // Configuration object to make it easy to switch to real service
 export const API_CONFIG = {
@@ -125,6 +127,80 @@ const apiRequest = async <T>(
   }
 };
 
+// Multipart form data request helper for file uploads
+const apiMultipartRequest = async <T>(
+  endpoint: string,
+  formData: FormData,
+  options: Omit<RequestInit, "body" | "headers"> = {}
+): Promise<T> => {
+  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+
+  // Get auth token from sessionStorage
+  const token = sessionStorage.getItem("auth_token");
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+    const response = await fetch(url, {
+      ...options,
+      method: "POST",
+      body: formData,
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // If response is not JSON, use default message
+        if (response.status === 401) {
+          errorMessage = "Authentication required. Please log in again.";
+        } else if (response.status === 403) {
+          errorMessage =
+            "Access denied. You don't have permission to perform this action.";
+        } else if (response.status >= 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+
+      throw new ApiError(errorMessage, response.status);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Handle different types of errors for better UX
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ApiError("Request timed out. Please try again.");
+    }
+
+    // Network errors
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new ApiError("Network error. Please check your connection.");
+    }
+
+    throw new ApiError(
+      error instanceof Error ? error.message : "An unexpected error occurred"
+    );
+  }
+};
+
 // Types for API requests and responses
 export interface CreatePostRequest {
   title: string;
@@ -134,6 +210,15 @@ export interface CreatePostRequest {
   authorId: string;
   categoryId: string;
   tags: string[];
+}
+
+export interface CreatePostMultipartRequest {
+  title: string;
+  content: string;
+  categoryId: string;
+  tagIds: string[];
+  submit: boolean;
+  files?: File[];
 }
 
 export interface UpdatePostRequest {
@@ -160,6 +245,24 @@ export interface PostResponse {
   rejectNote?: string;
 }
 
+// Paginated response interface for API that returns paginated data
+interface PaginatedResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    offset: number;
+  };
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  first: boolean;
+  empty: boolean;
+}
+
 // Article Service
 export const articleService = {
   /**
@@ -172,6 +275,35 @@ export const articleService = {
       method: "POST",
       body: JSON.stringify(articleData),
     });
+  },
+
+  /**
+   * Create a new article/post using multipart form data (supports file uploads)
+   */
+  createArticleMultipart: async (
+    articleData: CreatePostMultipartRequest
+  ): Promise<PostResponse> => {
+    const formData = new FormData();
+
+    // Add text fields
+    formData.append("title", articleData.title);
+    formData.append("content", articleData.content);
+    formData.append("categoryId", articleData.categoryId);
+    formData.append("submit", articleData.submit.toString());
+
+    // Add tag IDs (can be multiple)
+    articleData.tagIds.forEach((tagId) => {
+      formData.append("tagIds", tagId);
+    });
+
+    // Add files if any
+    if (articleData.files && articleData.files.length > 0) {
+      articleData.files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
+    return apiMultipartRequest<PostResponse>(API_ENDPOINTS.POSTS, formData);
   },
 
   /**
@@ -226,7 +358,10 @@ export const articleService = {
       ? `${API_ENDPOINTS.POSTS}?${queryString}`
       : API_ENDPOINTS.POSTS;
 
-    return apiRequest<PostResponse[]>(endpoint);
+    const response = await apiRequest<PaginatedResponse<PostResponse>>(
+      endpoint
+    );
+    return response.content;
   },
 
   /**

@@ -19,21 +19,11 @@ const UserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Initialize profile immediately from user data (AuthGuard ensures user exists)
-  const [profile, setProfile] = useState<ProfileData>(() => {
-    // Safety check in case user is still loading
-    if (!user) {
-      return {
-        name: "",
-        email: "",
-        role: "",
-      };
-    }
-    return {
-      name: user.name || "",
-      email: user.email || "",
-      role: user.role || "",
-    };
+  // Initialize profile with safe defaults - will be updated when user data is available
+  const [profile, setProfile] = useState<ProfileData>({
+    name: user?.name || "",
+    email: user?.email || "",
+    role: user?.role || "",
   });
   const [posts, setPosts] = useState<PostResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +52,8 @@ const UserProfile = () => {
           const userArticles = await articleService.getArticlesByAuthor(
             user.id
           );
-          setPosts(userArticles);
+          // Ensure userArticles is always an array
+          setPosts(Array.isArray(userArticles) ? userArticles : []);
         } else {
           setPosts([]);
         }
@@ -145,14 +136,14 @@ const UserProfile = () => {
             <h2 className="text-2xl font-semibold">
               Articles by {profile.name}
             </h2>
-            {posts.length > 0 && (
+            {Array.isArray(posts) && posts.length > 0 && (
               <span className="text-sm text-muted-foreground">
                 ({posts.length} article{posts.length !== 1 ? "s" : ""})
               </span>
             )}
           </div>
 
-          {posts.length === 0 ? (
+          {!Array.isArray(posts) || posts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">No articles yet.</p>
             </div>

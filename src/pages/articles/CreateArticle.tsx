@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,7 @@ import {
   categoryService,
   tagService,
   ApiError,
+  CreatePostMultipartRequest,
 } from "@/lib/articleService";
 import { Category, Tag } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,18 +42,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Save, Send, Eye } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import MarkdownEditor from "@/components/MarkdownEditor";
+import { MarkdownEditor } from "@/components/editor";
 
 // Constants
-const DRAFT_STORAGE_KEY = "draft:article";
-const CMS_REDIRECT_DELAY = 900;
-const DEFAULT_SUMMARY = "No summary provided";
 const DEFAULT_CONTENT = "No content provided";
 
 // Types
 interface ArticleFormData {
   title: string;
-  summary: string;
   content: string;
   categoryId: string;
   selectedTags: string[];
@@ -66,7 +62,6 @@ interface ValidationResult {
 
 const CreateArticle = () => {
   const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -77,6 +72,11 @@ const CreateArticle = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  // Uploaded files state
+  const [uploadedFiles, setUploadedFiles] = useState<Map<string, File>>(
+    new Map()
+  );
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -131,12 +131,6 @@ const CreateArticle = () => {
         message: "Please enter a title for your article.",
       };
     }
-    if (!summary.trim()) {
-      return {
-        isValid: false,
-        message: "Please enter a summary for your article.",
-      };
-    }
     if (!content.trim()) {
       return {
         isValid: false,
@@ -150,18 +144,17 @@ const CreateArticle = () => {
       };
     }
     return { isValid: true };
-  }, [title, summary, content, categoryId]);
+  }, [title, content, categoryId]);
 
   // Memoized derived data
   const formData: ArticleFormData = useMemo(
     () => ({
       title,
-      summary,
       content,
       categoryId,
       selectedTags,
     }),
-    [title, summary, content, categoryId, selectedTags]
+    [title, content, categoryId, selectedTags]
   );
 
   // Event handlers with memoization
@@ -190,16 +183,20 @@ const CreateArticle = () => {
     setLoading(true);
 
     try {
-      await articleService.createArticle({
+      // Convert uploaded files Map to File array
+      const filesArray = Array.from(uploadedFiles.values());
+
+      const articleData: CreatePostMultipartRequest = {
         title: title.trim(),
-        summary: summary.trim() || DEFAULT_SUMMARY,
         content: content.trim() || DEFAULT_CONTENT,
-        status: "DRAFT",
-        authorId: user.id,
         categoryId:
           categoryId || (categories.length > 0 ? categories[0].id : ""),
-        tags: selectedTags, // Use tag IDs directly
-      });
+        tagIds: selectedTags,
+        submit: false, // false for draft
+        files: filesArray,
+      };
+
+      await articleService.createArticleMultipart(articleData);
 
       toast({
         title: "Draft saved",
@@ -224,14 +221,13 @@ const CreateArticle = () => {
       setLoading(false);
     }
   }, [
-    user,
     validateDraftForm,
     title,
-    summary,
     content,
     categoryId,
     categories,
     selectedTags,
+    uploadedFiles,
     navigate,
     toast,
   ]);
@@ -252,38 +248,58 @@ const CreateArticle = () => {
     setLoading(true);
 
     try {
-      // Store form data for CMS integration
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+      // Convert uploaded files Map to File array
+      const filesArray = Array.from(uploadedFiles.values());
+
+      const articleData: CreatePostMultipartRequest = {
+        title: title.trim(),
+        content: content.trim(),
+        categoryId:
+          categoryId || (categories.length > 0 ? categories[0].id : ""),
+        tagIds: selectedTags,
+        submit: true, // true for submit for review
+        files: filesArray,
+      };
+
+      await articleService.createArticleMultipart(articleData);
 
       toast({
-        title: "Redirecting to CMS",
-        description: "You'll finalize and save the draft there for review.",
+        title: "Article submitted",
+        description: "Your article has been submitted for review.",
       });
-
-      // Redirect to CMS after delay
-      setTimeout(() => {
-        window.location.href = "/admin/#/collections/blog/new";
-      }, CMS_REDIRECT_DELAY);
+      navigate("/my-articles");
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error("Failed to prepare for CMS submission:", error);
+      console.error("Failed to submit article:", error);
+
+      let errorMessage = "Failed to submit article. Please try again.";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: "Failed to prepare submission. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
-  }, [validateSubmitForm, formData, toast]);
+  }, [
+    validateSubmitForm,
+    title,
+    content,
+    categoryId,
+    categories,
+    selectedTags,
+    uploadedFiles,
+    navigate,
+    toast,
+  ]);
 
   // Memoized input handlers
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value),
-    []
-  );
-
-  const handleSummaryChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => setSummary(e.target.value),
     []
   );
 
@@ -371,20 +387,10 @@ const CreateArticle = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="summary">Summary *</Label>
-                      <Textarea
-                        id="summary"
-                        placeholder="Brief summary of your article"
-                        value={summary}
-                        onChange={handleSummaryChange}
-                        rows={3}
-                      />
-                    </div>
-
                     <MarkdownEditor
                       value={content}
                       onChange={setContent}
+                      onFilesChange={setUploadedFiles}
                       placeholder="Write your article content here using Markdown..."
                       label="Content * (Markdown supported)"
                       rows={20}
@@ -396,9 +402,6 @@ const CreateArticle = () => {
                       <h1 className="text-3xl font-bold mb-4">
                         {title || "Article Title"}
                       </h1>
-                      <p className="text-xl text-muted-foreground leading-relaxed">
-                        {summary || "Article summary will appear here..."}
-                      </p>
                     </div>
 
                     <div className="prose prose-lg mx-auto">
