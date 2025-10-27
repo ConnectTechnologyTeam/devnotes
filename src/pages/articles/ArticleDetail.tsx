@@ -1,37 +1,68 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
-import {
-  articleService,
-  categoryService,
-  tagService,
-  PostResponse,
-  ApiError,
-} from "@/lib/articleService";
-import { Article, Category, Tag, User } from "@/lib/mockData";
-import {
-  ArrowLeft,
-  Calendar,
-  Tag as TagIcon,
-  User as UserIcon,
-} from "lucide-react";
-import { UserBadge } from "@/components/UserBadge";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { articleService, PostResponse, ApiError } from "@/lib/articleService";
+import { Article } from "@/lib/mockData";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { calculateReadingTime } from "@/lib/readingUtils";
+import {
+  ArticleMetadata,
+  ArticleTags,
+  ArticleActions,
+  ErrorState,
+  LoadingState,
+  MarkdownRenderer,
+} from "@/components/articles";
 
 const ArticleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const readingProgress = useReadingProgress();
 
-  // Fetch article data and related entities
+  // Transform API response to Article format
+  const transformPostToArticle = useCallback(
+    (postData: PostResponse): Article => ({
+      id: postData.id.toString(),
+      title: postData.title,
+      summary: "", // Empty summary since we're not using it
+      content: postData.content,
+      status: postData.status,
+      authorId: postData.author.id.toString(),
+      author: {
+        id: postData.author.id.toString(),
+        name: postData.author.username,
+        email: postData.author.email,
+        role: postData.author.role as "USER" | "ADMIN",
+      },
+      categoryId: postData.category.id.toString(),
+      category: {
+        id: postData.category.id.toString(),
+        name: postData.category.name,
+        slug: postData.category.slug,
+      },
+      tags: postData.tags.map((tag) => ({
+        id: tag.id.toString(),
+        name: tag.name,
+        slug: tag.slug,
+      })),
+      publishedAt: postData.publishedAt || undefined,
+      createdAt: postData.createdAt,
+      updatedAt: postData.updatedAt,
+      rejectNote: postData.rejectReason || undefined,
+    }),
+    []
+  );
+
+  // Fetch article data
   const fetchArticle = useCallback(async () => {
     if (!slug) return;
 
@@ -39,73 +70,22 @@ const ArticleDetail = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch the article/post from API
-      const postData: PostResponse = await articleService.getArticleById(slug);
-
-      // Fetch category and tag details in parallel
-      const [category, allTags] = await Promise.all([
-        categoryService.getCategoryById(postData.categoryId),
-        tagService.getTags(),
-      ]);
-
-      // Convert tag strings to Tag objects
-      const tags: Tag[] = postData.tags.map((tagName) => {
-        const tagData = allTags.find((tag) => tag.name === tagName);
-        return (
-          tagData || {
-            id: `generated-${tagName.toLowerCase().replace(/\s+/g, "-")}`,
-            name: tagName,
-            slug: tagName.toLowerCase().replace(/\s+/g, "-"),
-          }
-        );
-      });
-
-      // Create author object (extract name from email format if possible)
-      const isEmail = postData.authorId.includes("@");
-      const authorName = isEmail
-        ? postData.authorId
-            .split("@")[0]
-            .replace(/[._]/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase())
-        : postData.authorId;
-
-      const author: User = {
-        id: postData.authorId,
-        name: authorName,
-        email: isEmail ? postData.authorId : `${postData.authorId}@example.com`,
-        role: "USER", // Default role
-      };
-
-      // Convert PostResponse to Article format
-      const articleData: Article = {
-        id: postData.id,
-        title: postData.title,
-        summary: postData.summary,
-        content: postData.content,
-        status: postData.status,
-        authorId: postData.authorId,
-        author,
-        categoryId: postData.categoryId,
-        category,
-        tags,
-        publishedAt: postData.publishedAt,
-        createdAt: postData.createdAt,
-        updatedAt: postData.updatedAt,
-        rejectNote: postData.rejectNote,
-      };
-
+      const postData = await articleService.getArticleById(slug);
+      const articleData = transformPostToArticle(postData);
       setArticle(articleData);
     } catch (err) {
-      console.error("Error loading article:", err);
-
-      let errorMessage = "Failed to load article";
-      if (err instanceof ApiError) {
-        if (err.status === 404) {
-          errorMessage = "Article not found";
-        } else {
-          errorMessage = err.message;
-        }
+      // Log error for debugging
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error("Error loading article:", err);
       }
+
+      const errorMessage =
+        err instanceof ApiError && err.status === 404
+          ? "Article not found"
+          : err instanceof ApiError
+          ? err.message
+          : "Failed to load article";
 
       setError(errorMessage);
       toast({
@@ -116,25 +96,26 @@ const ArticleDetail = () => {
     } finally {
       setLoading(false);
     }
-  }, [slug, toast]);
+  }, [slug, transformPostToArticle, toast]);
 
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
+
+  // Memoized values for performance
+  const readingTime = useMemo(
+    () => (article ? calculateReadingTime(article.content) : 0),
+    [article]
+  );
+
+  const handleBack = useCallback(() => navigate(-1), [navigate]);
 
   // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
-              <p className="text-muted-foreground mt-4">Loading article...</p>
-            </div>
-          </div>
-        </div>
+        <LoadingState onBack={handleBack} />
       </div>
     );
   }
@@ -144,25 +125,7 @@ const ArticleDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-3xl font-bold mb-4">
-            {error === "Article not found" ? "Article Not Found" : "Error"}
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            {error || "The article you're looking for doesn't exist."}
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={fetchArticle} variant="outline">
-              Try Again
-            </Button>
-            <Link to="/">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
+        <ErrorState error={error} onRetry={fetchArticle} />
       </div>
     );
   }
@@ -171,225 +134,44 @@ const ArticleDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-muted z-50">
+        <div
+          className="h-full bg-primary transition-all duration-150 ease-out"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
       <article className="container mx-auto px-4 py-8 sm:py-12 max-w-4xl">
         {/* Article Header */}
         <div className="mb-6 sm:mb-8">
-          <Link
-            to="/"
-            className="inline-flex items-center text-muted-foreground hover:text-foreground mb-4 sm:mb-6 transition-colors min-h-[44px]"
+          <button
+            onClick={handleBack}
+            className="nav-back inline-flex items-center mb-4 sm:mb-6 min-h-[44px] hover:bg-muted/50 px-2 py-1 rounded-md transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Articles
-          </Link>
+            Back
+          </button>
 
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <UserIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>{article.author.name}</span>
-              </div>
-
-              <div className="flex items-center justify-between sm:justify-start sm:space-x-4">
-                <div className="flex items-center space-x-1">
-                  <TagIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <Link
-                    to={`/categories/${article.category.slug}`}
-                    className="hover:text-primary transition-colors"
-                  >
-                    {article.category.name}
-                  </Link>
-                </div>
-
-                {article.publishedAt && (
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">
-                      {new Date(article.publishedAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        }
-                      )}
-                    </span>
-                    <span className="sm:hidden">
-                      {new Date(article.publishedAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        }
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
+          <div className="space-y-4 sm:space-y-6">
+            {/* Article Metadata and Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <ArticleMetadata article={article} readingTime={readingTime} />
+              <ArticleActions article={article} user={user} />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+            {/* Article Title */}
+            <h1 className="article-detail-title leading-tight">
               {article.title}
             </h1>
 
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
-              {article.summary}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {article.tags.map((tag) => (
-                <Link
-                  key={tag.id}
-                  to={`/tags/${tag.slug}`}
-                  className="inline-flex items-center px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs sm:text-sm hover:bg-secondary-hover transition-colors min-h-[32px]"
-                >
-                  {tag.name}
-                </Link>
-              ))}
-            </div>
+            {/* Tags */}
+            <ArticleTags tags={article.tags} />
           </div>
         </div>
 
         {/* Article Content */}
-        <div className="prose prose-sm sm:prose-lg max-w-none sm:mx-auto overflow-hidden">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            // Allow data URIs for images inserted as base64
-            urlTransform={(url) => url}
-            components={{
-              a: ({ href, children }) => (
-                <a
-                  href={href as string}
-                  className="text-primary hover:underline break-words"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {children}
-                </a>
-              ),
-              h1: ({ children }) => (
-                <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-foreground">
-                  {children}
-                </h1>
-              ),
-              h2: ({ children }) => (
-                <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 mt-6 sm:mt-8 text-foreground">
-                  {children}
-                </h2>
-              ),
-              h3: ({ children }) => (
-                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 mt-4 sm:mt-6 text-foreground">
-                  {children}
-                </h3>
-              ),
-              p: ({ children }) => (
-                <p className="mb-3 sm:mb-4 leading-relaxed text-foreground text-sm sm:text-base">
-                  {children}
-                </p>
-              ),
-              code: ({ children, className }) => {
-                const isInline = !className;
-                if (isInline) {
-                  return (
-                    <code className="bg-muted px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono">
-                      {children}
-                    </code>
-                  );
-                }
-                return <code className={className}>{children}</code>;
-              },
-              pre: ({ children }) => (
-                <pre className="bg-muted p-3 sm:p-4 rounded-lg overflow-x-auto mb-3 sm:mb-4 text-sm">
-                  {children}
-                </pre>
-              ),
-              blockquote: ({ children }) => (
-                <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
-                  {children}
-                </blockquote>
-              ),
-              ul: ({ children }) => (
-                <ul className="mb-4 ml-6 space-y-2">{children}</ul>
-              ),
-              ol: ({ children }) => (
-                <ol className="mb-4 ml-6 space-y-2">{children}</ol>
-              ),
-              li: ({ children }) => (
-                <li className="leading-relaxed">{children}</li>
-              ),
-            }}
-          >
-            {article.content}
-          </ReactMarkdown>
-        </div>
-
-        {/* Article Footer */}
-        <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
-            <div className="flex items-center justify-center sm:justify-start">
-              <UserBadge
-                name={article.author.name}
-                avatarUrl={article.author.avatarUrl}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
-              {/* Action buttons: Edit (author) and Delete (admin) */}
-              {user && article.authorId === user.id && (
-                <Link
-                  to={`/articles/${article.id}/edit`}
-                  className="flex-1 sm:flex-initial"
-                >
-                  <Button className="w-full sm:w-auto min-h-[44px]">
-                    Edit
-                  </Button>
-                </Link>
-              )}
-              {user && user.role === "ADMIN" && (
-                <Button
-                  variant="destructive"
-                  className="w-full sm:w-auto min-h-[44px]"
-                  onClick={async () => {
-                    try {
-                      await articleService.deleteArticle(article.id);
-
-                      toast({
-                        title: "Article deleted",
-                        description:
-                          "The article has been removed successfully.",
-                      });
-                      navigate("/");
-                    } catch (error) {
-                      let errorMessage =
-                        "Could not delete the article. Please try again.";
-                      if (error instanceof ApiError) {
-                        errorMessage = error.message;
-                      }
-
-                      toast({
-                        title: "Delete failed",
-                        description: errorMessage,
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              )}
-              <Link to="/" className="flex-1 sm:flex-initial">
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto min-h-[44px]"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">More Articles</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
+        <MarkdownRenderer content={article.content} />
       </article>
     </div>
   );

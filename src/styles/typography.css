@@ -1,0 +1,190 @@
+/* Typography Configuration for DevNotes */
+
+/* CSS Variables - Defined at root level for global access */
+:root {
+  /* Article Detail Page Typography - Balanced sizes for better readability */
+  --article-title-mobile: 2.5rem; /* text-4xl */
+  --article-title-sm: 3rem; /* text-5xl */
+  --article-title-md: 3.5rem; /* text-6xl */
+  --article-title-lg: 4rem; /* text-7xl */
+
+  /* Metadata Text - Optimized for readability */
+  --article-metadata-mobile: 0.875rem; /* text-sm */
+  --article-metadata-sm: 1rem; /* text-base */
+
+  /* Tag Text - Better visibility */
+  --article-tag-mobile: 0.875rem; /* text-sm */
+  --article-tag-sm: 1rem; /* text-base */
+
+  /* Markdown Content Typography - Balanced for comfortable reading */
+  --markdown-h1-mobile: 2rem; /* text-3xl */
+  --markdown-h1-sm: 2.25rem; /* text-4xl */
+
+  --markdown-h2-mobile: 1.75rem; /* text-2xl */
+  --markdown-h2-sm: 2rem; /* text-3xl */
+
+  --markdown-h3-mobile: 1.5rem; /* text-xl */
+  --markdown-h3-sm: 1.75rem; /* text-2xl */
+
+  --markdown-p-mobile: 1rem; /* text-base */
+  --markdown-p-sm: 1.125rem; /* text-lg */
+
+  --markdown-code-mobile: 0.875rem; /* text-sm */
+  --markdown-code-sm: 1rem; /* text-base */
+
+  --markdown-pre: 1rem; /* text-base */
+}
+
+/* Article Detail Classes */
+.article-detail-title {
+  font-size: var(--article-title-mobile) !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+}
+
+@media (min-width: 640px) {
+  .article-detail-title {
+    font-size: var(--article-title-sm) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .article-detail-title {
+    font-size: var(--article-title-md) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .article-detail-title {
+    font-size: var(--article-title-lg) !important;
+  }
+}
+
+.article-detail-metadata {
+  font-size: var(--article-metadata-mobile);
+}
+
+@media (min-width: 640px) {
+  .article-detail-metadata {
+    font-size: var(--article-metadata-sm);
+  }
+}
+
+.article-detail-tag {
+  font-size: var(--article-tag-mobile);
+}
+
+@media (min-width: 640px) {
+  .article-detail-tag {
+    font-size: var(--article-tag-sm);
+  }
+}
+
+/* Markdown Content Classes */
+.markdown-h1 {
+  font-size: var(--markdown-h1-mobile) !important;
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .markdown-h1 {
+    font-size: var(--markdown-h1-sm) !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+.markdown-h2 {
+  font-size: var(--markdown-h2-mobile) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+  margin-top: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+  .markdown-h2 {
+    font-size: var(--markdown-h2-sm) !important;
+    margin-bottom: 1rem !important;
+    margin-top: 2rem !important;
+  }
+}
+
+.markdown-h3 {
+  font-size: var(--markdown-h3-mobile) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  margin-top: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .markdown-h3 {
+    font-size: var(--markdown-h3-sm) !important;
+    margin-bottom: 0.75rem !important;
+    margin-top: 1.5rem !important;
+  }
+}
+
+.markdown-p {
+  font-size: var(--markdown-p-mobile) !important;
+  line-height: 1.6 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+@media (min-width: 640px) {
+  .markdown-p {
+    font-size: var(--markdown-p-sm) !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
+.markdown-code {
+  font-size: var(--markdown-code-mobile);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+}
+
+@media (min-width: 640px) {
+  .markdown-code {
+    font-size: var(--markdown-code-sm);
+  }
+}
+
+.markdown-pre {
+  font-size: var(--markdown-pre);
+}
+
+/* Error and Loading States - Balanced for better readability */
+.error-title {
+  font-size: 2.25rem !important; /* text-4xl */
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+}
+
+.error-description {
+  color: hsl(var(--muted-foreground)) !important;
+  margin-bottom: 2rem !important;
+  font-size: 1.125rem !important; /* text-lg */
+}
+
+.loading-text {
+  color: hsl(var(--muted-foreground)) !important;
+  margin-top: 1rem !important;
+  font-size: 1rem !important; /* text-base */
+}
+
+/* Button Text Sizes */
+.btn-delete {
+  font-size: 0.75rem; /* text-xs */
+  height: 1.5rem; /* h-6 */
+  padding: 0 0.5rem; /* px-2 */
+}
+
+/* Navigation Text */
+.nav-back {
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s;
+}
+
+.nav-back:hover {
+  color: hsl(var(--foreground));
+}

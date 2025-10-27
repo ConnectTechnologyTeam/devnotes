@@ -231,18 +231,33 @@ export interface UpdatePostRequest {
 }
 
 export interface PostResponse {
-  id: string;
+  id: number;
   title: string;
-  summary: string;
   content: string;
   status: "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED";
-  authorId: string;
-  categoryId: string;
-  tags: string[];
-  publishedAt?: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  tags: Array<{
+    id: number;
+    name: string;
+    slug: string;
+  }>;
+  images?: string[];
+  author: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
-  rejectNote?: string;
+  approvedBy?: number | null;
+  approvedAt?: string | null;
+  rejectReason?: string | null;
 }
 
 // Paginated response interface for API that returns paginated data
