@@ -57,7 +57,7 @@ const ArticleDetail = () => {
       );
 
       return {
-        id: postData.id.toString(),
+        id: postData.id, // Keep as number to match Article interface
         title: postData.title,
         summary: "", // Empty summary since we're not using it
         content: processedContent,
@@ -65,7 +65,7 @@ const ArticleDetail = () => {
         authorId: postData.author.id.toString(),
         author: {
           id: postData.author.id.toString(),
-          name: postData.author.username,
+          name: postData.author.username || postData.author.email.split("@")[0], // Map username to name
           email: postData.author.email,
           role: postData.author.role as "USER" | "ADMIN",
         },

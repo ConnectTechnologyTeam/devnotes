@@ -53,7 +53,8 @@ export const ArticleActions = ({ article, user }: ArticleActionsProps) => {
 
   const handleDelete = async () => {
     try {
-      await articleService.deleteArticle(article.id);
+      // Convert number ID to string for API call
+      await articleService.deleteArticle(article.id.toString());
       toast({
         title: "Article deleted",
         description: "The article has been removed successfully.",

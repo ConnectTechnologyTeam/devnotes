@@ -112,6 +112,7 @@ const CreateArticle = () => {
   const [loading, setLoading] = useState(false);
 
   // API data state
+  // Note: Categories and Tags from API have number IDs, but we convert them to string for consistency
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -137,8 +138,21 @@ const CreateArticle = () => {
           tagService.getTags(),
         ]);
 
-        setCategories(categoriesData);
-        setTags(tagsData);
+        // Convert API response to match mockData types (number IDs to string)
+        const convertedCategories: Category[] = categoriesData.map((cat) => ({
+          id: cat.id.toString(),
+          name: cat.name,
+          slug: cat.slug,
+        }));
+
+        const convertedTags: Tag[] = tagsData.map((tag) => ({
+          id: tag.id.toString(),
+          name: tag.name,
+          slug: tag.slug,
+        }));
+
+        setCategories(convertedCategories);
+        setTags(convertedTags);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error("Failed to fetch categories and tags:", error);

@@ -249,7 +249,12 @@ export interface PostResponse {
     slug: string;
   }>;
   images?: string[];
-  author: User;
+  author: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
