@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Article } from '@/lib/mockData';
+import type { PostResponse } from '@/lib/articleService';
 import { Calendar, Clock, Tag, User } from 'lucide-react';
 
 interface ArticleCardProps {
-  article: Article;
+  article: PostResponse;
   showStatus?: boolean;
 }
 
 export const ArticleCard = ({ article, showStatus = false }: ArticleCardProps) => {
-  const getStatusVariant = (status: Article['status']) => {
+  const getStatusVariant = (status: PostResponse['status']) => {
     switch (status) {
       case 'PUBLISHED':
         return 'default';

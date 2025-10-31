@@ -2,17 +2,58 @@ import { Header } from '@/components/Header';
 import { ArticleList } from '@/components/ArticleList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockCategories, mockArticles } from '@/lib/mockData';
 import { Link } from 'react-router-dom';
 import { Folder, FileText } from 'lucide-react';
+import { useEffect, useState, useMemo } from "react";
+import {
+  categoryService,
+  articleService,
+  type PostResponse
+} from "@/lib/articleService";
+import type { Category } from "@/lib/articleService";
 
 const Categories = () => {
-  const publishedArticles = mockArticles.filter(article => article.status === 'PUBLISHED');
-  
-  const categoriesWithCounts = mockCategories.map(category => ({
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [articles, setArticles] = useState<PostResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Gọi song song 2 API
+        const [fetchedCategories, fetchedArticles] = await Promise.all([
+          categoryService.getCategories(),
+          articleService.getArticles({ status: "PUBLISHED" }),
+        ]);
+
+        setCategories(fetchedCategories);
+        setArticles(fetchedArticles);
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Chỉ lấy bài viết đã publish
+  const publishedArticles = articles.filter(
+    (article) => article.status === "PUBLISHED"
+  );
+
+  // Đếm số lượng bài trong từng category
+  const categoriesWithCounts = categories.map((category) => ({
     ...category,
-    articleCount: publishedArticles.filter(article => article.categoryId === category.id).length
+    articleCount: publishedArticles.filter(
+      (article) => article.category.id === category.id
+    ).length,
   }));
+
+  if (loading) {
+    return <p className="text-center py-12 text-muted-foreground">Đang tải dữ liệu...</p>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,34 +101,42 @@ const Categories = () => {
         </div>
 
         {/* Featured Articles from Different Categories */}
-        <div className="space-y-12">
-          {categoriesWithCounts
-            .filter(category => category.articleCount > 0)
-            .slice(0, 3)
-            .map((category) => {
-              const categoryArticles = publishedArticles
-                .filter(article => article.categoryId === category.id)
-                .slice(0, 3);
-              
-              return (
-                <div key={category.id}>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <div className="flex items-center space-x-3">
-                      <Folder className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                      <h2 className="text-xl sm:text-2xl font-bold">{category.name}</h2>
-                    </div>
-                    <Link to={`/categories/${category.slug}`}>
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto min-h-[44px]">
-                        <span className="sm:hidden">View All Articles</span>
-                        <span className="hidden sm:inline">View All {category.name} Articles</span>
-                      </Button>
-                    </Link>
+      <div className="space-y-12">
+        {categoriesWithCounts
+          .filter((category) => category.articleCount > 0)
+          .slice(0, 3)
+          .map((category) => {
+            const categoryArticles = publishedArticles
+              .filter((article) => article.category.id === category.id)
+              .slice(0, 3);
+
+            return (
+              <div key={category.id}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                  <div className="flex items-center space-x-3">
+                    <Folder className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    <h2 className="text-xl sm:text-2xl font-bold">
+                      {category.name}
+                    </h2>
                   </div>
-                  <ArticleList articles={categoryArticles} />
+                  <Link to={`/categories/${category.slug}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto min-h-[44px]"
+                    >
+                      <span className="sm:hidden">View All Articles</span>
+                      <span className="hidden sm:inline">
+                        View All {category.name} Articles
+                      </span>
+                    </Button>
+                  </Link>
                 </div>
-              );
-            })}
-        </div>
+                <ArticleList articles={categoryArticles} />
+              </div>
+            );
+          })}
+      </div>
 
         {publishedArticles.length === 0 && (
           <div className="text-center py-12">

@@ -1,8 +1,8 @@
-import { Article } from '@/lib/mockData';
 import { ArticleCard } from './ArticleCard';
+import type { PostResponse } from '@/lib/articleService';
 
 interface ArticleListProps {
-  articles: Article[];
+  articles: PostResponse[];
   showStatus?: boolean;
   emptyMessage?: string;
 }
