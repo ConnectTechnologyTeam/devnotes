@@ -1,10 +1,15 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MarkdownImage } from "./MarkdownImage";
 
 interface MarkdownRendererProps {
   content: string;
 }
 
+/**
+ * Renders markdown content with custom styling and components
+ * Provides a consistent, accessible markdown rendering experience
+ */
 export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   return (
     <div className="prose prose-sm sm:prose-lg max-w-none sm:mx-auto overflow-hidden">
@@ -62,6 +67,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             <ol className="mb-4 ml-6 space-y-2">{children}</ol>
           ),
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          img: MarkdownImage,
         }}
       >
         {content}

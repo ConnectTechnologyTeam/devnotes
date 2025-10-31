@@ -12,6 +12,16 @@ interface ArticleMetadataProps {
   readingTime: number;
 }
 
+/**
+ * ArticleMetadata Component
+ *
+ * Displays article metadata information:
+ * - Author name
+ * - Category (with link)
+ * - Publication date (responsive format)
+ * - Estimated reading time
+ */
+
 export const ArticleMetadata = ({
   article,
   readingTime,

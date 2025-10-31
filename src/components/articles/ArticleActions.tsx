@@ -11,6 +11,19 @@ interface ArticleActionsProps {
   user: User | null;
 }
 
+/**
+ * Button size constants for consistent styling
+ */
+const BUTTON_SIZE_CLASSES = "h-12 px-8" as const;
+
+/**
+ * ArticleActions Component
+ *
+ * Provides action buttons for article interaction:
+ * - Share: Copies article URL to clipboard
+ * - Save/Bookmark: Saves article to bookmarks (UI only)
+ * - Delete: Removes article (admin only)
+ */
 export const ArticleActions = ({ article, user }: ArticleActionsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -65,7 +78,7 @@ export const ArticleActions = ({ article, user }: ArticleActionsProps) => {
       <Button
         variant="outline"
         size="default"
-        className="h-12 px-8"
+        className={BUTTON_SIZE_CLASSES}
         onClick={handleShare}
       >
         <Share2 className="h-4 w-4 mr-2" />
@@ -75,18 +88,18 @@ export const ArticleActions = ({ article, user }: ArticleActionsProps) => {
       <Button
         variant="outline"
         size="default"
-        className="h-12 px-8"
+        className={BUTTON_SIZE_CLASSES}
         onClick={handleBookmark}
       >
         <Bookmark className="h-4 w-4 mr-2" />
         Save
       </Button>
 
-      {user?.role === "USER" && (
+      {user?.role === "ADMIN" && (
         <Button
           variant="destructive"
           size="default"
-          className="btn-delete h-12 px-8"
+          className={`btn-delete ${BUTTON_SIZE_CLASSES}`}
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4 mr-2" />

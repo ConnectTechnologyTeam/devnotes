@@ -47,6 +47,49 @@ import { MarkdownEditor } from "@/components/editor";
 // Constants
 const DEFAULT_CONTENT = "No content provided";
 
+/**
+ * Process content to replace image placeholders with indexed placeholders
+ *
+ * This function converts markdown image placeholders like:
+ * - "![image11](img-1761572940441-jpyog9zss)" → "${0}"
+ * - "![ChatGPT Image Jun 30, 2025, 11_47_12 PM](img-1761572973187-pz3cke1nh)" → "${1}"
+ *
+ * The indexed placeholders can later be mapped back to actual image URLs
+ * when retrieving the article content.
+ */
+const processContentWithImagePlaceholders = (
+  content: string,
+  uploadedFiles: Map<string, File>
+): string => {
+  let processedContent = content;
+  let imageIndex = 0;
+
+  // Create a map of placeholder IDs to their index
+  const placeholderToIndex = new Map<string, number>();
+
+  // Find all image placeholders in the content
+  const imagePlaceholderRegex = /!\[([^\]]*)\]\(img-(\d+)-([a-zA-Z0-9]+)\)/g;
+  let match;
+
+  while ((match = imagePlaceholderRegex.exec(content)) !== null) {
+    const fullMatch = match[0]; // e.g., "![image11](img-1761572940441-jpyog9zss)"
+    const placeholderId = "img-" + match[2] + "-" + match[3]; // e.g., "img-1761572940441-jpyog9zss"
+
+    // Only process if this placeholder exists in uploadedFiles
+    if (uploadedFiles.has(placeholderId)) {
+      if (!placeholderToIndex.has(placeholderId)) {
+        placeholderToIndex.set(placeholderId, imageIndex);
+        imageIndex++;
+      }
+
+      const index = placeholderToIndex.get(placeholderId)!;
+      processedContent = processedContent.replace(fullMatch, `\${${index}}`);
+    }
+  }
+
+  return processedContent;
+};
+
 // Types
 interface ArticleFormData {
   title: string;
@@ -186,9 +229,15 @@ const CreateArticle = () => {
       // Convert uploaded files Map to File array
       const filesArray = Array.from(uploadedFiles.values());
 
+      // Process content to replace image placeholders with indexed placeholders
+      const processedContent = processContentWithImagePlaceholders(
+        content.trim() || DEFAULT_CONTENT,
+        uploadedFiles
+      );
+
       const articleData: CreatePostMultipartRequest = {
         title: title.trim(),
-        content: content.trim() || DEFAULT_CONTENT,
+        content: processedContent,
         categoryId:
           categoryId || (categories.length > 0 ? categories[0].id : ""),
         tagIds: selectedTags,
@@ -251,9 +300,15 @@ const CreateArticle = () => {
       // Convert uploaded files Map to File array
       const filesArray = Array.from(uploadedFiles.values());
 
+      // Process content to replace image placeholders with indexed placeholders
+      const processedContent = processContentWithImagePlaceholders(
+        content.trim(),
+        uploadedFiles
+      );
+
       const articleData: CreatePostMultipartRequest = {
         title: title.trim(),
-        content: content.trim(),
+        content: processedContent,
         categoryId:
           categoryId || (categories.length > 0 ? categories[0].id : ""),
         tagIds: selectedTags,
