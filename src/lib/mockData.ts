@@ -22,7 +22,7 @@ export interface Tag {
 }
 
 export interface Article {
-  id: string;
+  id: number;
   title: string;
   summary: string;
   content: string;

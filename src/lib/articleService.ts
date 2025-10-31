@@ -1,11 +1,11 @@
-import { Article, Category, Tag, User } from "./mockData";
+import { Article, Tag, User } from "./mockData";
 
 // API Configuration
 // This can be easily changed to point to a real production API
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV
-    ? "http://localhost:8081/api"
+    ? "http://localhost:8080/api"
     : "https://api.devnotes.com");
 
 // Configuration object to make it easy to switch to real service
@@ -240,18 +240,16 @@ export interface PostResponse {
     name: string;
     slug: string;
   };
+  categoryId?: number;
+  summary: string;
+  authorId: number;
   tags: Array<{
     id: number;
     name: string;
     slug: string;
   }>;
   images?: string[];
-  author: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
+  author: User;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -400,7 +398,11 @@ export const articleService = {
     return articleService.getArticles({ status: "PENDING" });
   },
 };
-
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 // Category Service
 export const categoryService = {
   /**
